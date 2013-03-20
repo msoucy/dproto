@@ -1,3 +1,11 @@
+/**
+ * @file serialize.d
+ * @brief Serialization/deserialization code
+ * @author Matthew Soucy <msoucy@csh.rit.edu>
+ * @date Mar 5, 2013
+ * @version 0.0.1
+ */
+/// D protobuf serialization/deserialization
 module metus.dproto.serialize;
 
 import metus.dproto.exception;
@@ -36,7 +44,8 @@ template BuffType(string T) {
 }
 
 template MsgType(string T) {
-	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" || T == "uint32" || T == "uint64" || T == "bool" || T == "enum") {
+	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" ||
+			T == "uint32" || T == "uint64" || T == "bool" || T == "enum") {
 		enum MsgType = 0;
 	} else static if(T == "fixed64" || T == "sfixed64" || T == "double") {
 		enum MsgType = 1;
@@ -61,6 +70,13 @@ ubyte wireType(ulong data) @property pure nothrow {
 
 ulong msgNum(ulong data) @property pure nothrow {
 	return data>>3;
+}
+
+long readMsgData(ref ubyte[] src) {
+	size_t i = src.countUntil!q{!(a&0x80)}();
+	auto ret = src[0..i+1].fromVarint();
+	src = src[i+1..$];
+	return ret;
 }
 
 ubyte[] readVarint(ref ubyte[] src) {
@@ -90,14 +106,12 @@ long fromVarint(ubyte[] src) @property {
 BuffType!T readProto(string T)(ref ubyte[] src)
 	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool" || T == "enum")
 {
-	enforce(src.length >= BuffType!T.sizeof, new DProtoException("Not enough data in buffer"));
 	return src.readVarint().fromVarint().to!(BuffType!T)();
 }
 
 BuffType!T readProto(string T)(ref ubyte[] src)
 	if(T == "sint32" || T == "sint64")
 {
-	enforce(src.length >= BuffType!T.sizeof, new DProtoException("Not enough data in buffer"));
 	return src.readVarint().fromVarint().fromZigZag().to!(BuffType!T)();
 }
 
@@ -140,6 +154,7 @@ BuffType!T readProto(string T)(ref ubyte[] src)
 	auto length = src.readProto!"int64"();
 	enforce(src.length >= length, new DProtoException("Not enough data in buffer"));
 	auto s = cast(BuffType!T)(src.take(length));
+	src=src[length..$];
 	return s;
 }
 
