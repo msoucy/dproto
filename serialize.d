@@ -21,6 +21,12 @@ import std.system;
 ////////////////////////////////////////////////////////////////////////////////
 // Utilities
 
+bool IsBuiltinType(string T) {
+	return ["int32" , "sint32", "int64", "sint64", "uint32", "uint64", "bool",
+			"enum", "fixed64", "sfixed64", "double", "bytes", "string",
+			"fixed32", "sfixed32", "float"].canFind(T);
+}
+
 template BuffType(string T) {
 	// Msg type 0
 	static if(T == "int32"  || T == "sint32") alias BuffType = int;
@@ -53,6 +59,8 @@ template MsgType(string T) {
 		enum MsgType = 2;
 	} else static if(T == "fixed32" || T == "sfixed32" || T == "float") {
 		enum MsgType = 5;
+	} else {
+		enum MsgType = 2;
 	}
 }
 

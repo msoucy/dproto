@@ -8,5 +8,18 @@
 /// D Protocol Buffer bindings
 module metus.dproto.dproto;
 
-public import metus.dproto.serialize;
 public import metus.dproto.buffers;
+public import metus.dproto.exception;
+public import metus.dproto.parse;
+public import metus.dproto.serialize;
+
+import std.string : endsWith;
+import std.exception : enforce;
+
+template ProtocolBuffer(string s) {
+	static if(s.endsWith(".proto")) {
+		mixin(ProtoSchemaParser.parse(s,import(s)).toD());
+	} else {
+		mixin(ProtoSchemaParser.parse("<none>",s).toD());
+	}
+}

@@ -9,18 +9,22 @@
 module metus.dproto.buffers;
 
 //import std.conv;
+import std.algorithm;
+import std.array;
 import std.exception;
+import std.stdio;
 
 import metus.dproto.serialize;
 import metus.dproto.exception;
 
-struct OptionalBuffer(ulong id, string T) {
+// TODO: Support enums
+
+struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
-		alias BufferType = T;
-		alias ValueType = BuffType!T;
+		alias BufferType = TypeString;
+		alias ValueType = RealType;
 
 		bool isset=false;
-
 		ValueType raw;
 	}
 
@@ -37,35 +41,55 @@ struct OptionalBuffer(ulong id, string T) {
 		isset = true;
 		raw = val;
 	}
-	auto opAssign(ValueType val) {
-		isset = true;
-		raw = val;
-		return this;
-	}
-	ref ValueType opGet() @property {
-		return raw;
-	}
 
-	alias opGet this;
-	ubyte[] opCast(T:ubyte[])() {
-		return serialize();
+	static if(isDeprecated) {
+		deprecated auto opAssign(ValueType val) {
+			isset = true;
+			raw = val;
+			return this;
+		}
+		deprecated ref ValueType opGet() @property {
+			return raw;
+		}
+	} else {
+		auto opAssign(ValueType val) {
+			isset = true;
+			raw = val;
+			return this;
+		}
+		ref ValueType opGet() @property {
+			return raw;
+		}
 	}
+	alias opGet this;
 
 	ubyte[] serialize() {
-		return (MsgType!T | (id << 3)).toVarint() ~ raw.writeProto!T();
+		static if(IsBuiltinType(BufferType)) {
+			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
+		} else {
+			auto tmp = raw.serialize();
+			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
+		}
 	}
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
-		raw = data.readProto!BufferType(); // Changes data by ref
+		static if(IsBuiltinType(BufferType)) {
+			raw = data.readProto!BufferType(); // Changes data by ref
+		} else {
+			auto length = data.readProto!"int32"();
+			auto myData = data[0 .. length];
+			data = data[length .. $];
+			raw = RealType(myData);
+		}
 	}
 
 }
 
-struct RequiredBuffer(ulong id, string T) {
+struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
-		alias BufferType = T;
-		alias ValueType = BuffType!T;
+		alias BufferType = TypeString;
+		alias ValueType = RealType;
 
 		ValueType raw;
 	}
@@ -74,30 +98,45 @@ struct RequiredBuffer(ulong id, string T) {
 		raw = val;
 	}
 
-	ref ValueType opGet() @property {
-		return raw;
+	static if(isDeprecated) {
+		deprecated ref ValueType opGet() @property {
+			return raw;
+		}
+	} else {
+		ref ValueType opGet() @property {
+			return raw;
+		}
 	}
-
 	alias opGet this;
-	ubyte[] opCast(T:ubyte[])() {
-		return serialize();
-	}
+
 
 	ubyte[] serialize() {
-		return (MsgType!T | (id << 3)).toVarint() ~ raw.writeProto!T();
+		static if(IsBuiltinType(BufferType)) {
+			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
+		} else {
+			auto tmp = raw.serialize();
+			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
+		}
 	}
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
-		raw = data.readProto!BufferType(); // Changes data by ref
+		static if(IsBuiltinType(BufferType)) {
+			raw = data.readProto!BufferType(); // Changes data by ref
+		} else {
+			auto length = data.readProto!"int32"();
+			auto myData = data[0 .. length];
+			data = data[length .. $];
+			raw = RealType(myData);
+		}
 	}
 
 }
 
-struct RepeatedBuffer(ulong id, string T) {
+struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, bool packed=false) {
 	private {
-		alias BufferType = T;
-		alias ValueType = BuffType!T;
+		alias BufferType = TypeString;
+		alias ValueType = RealType;
 
 		ValueType[] raw = [];
 	}
@@ -109,26 +148,46 @@ struct RepeatedBuffer(ulong id, string T) {
 	this(ValueType[] val ...) {
 		raw = val;
 	}
-	auto opAssign(ValueType[] val ...) {
-		raw = val;
-	}
 
-	ref ValueType[] opGet() @property {
-		return raw;
+	static if(isDeprecated) {
+		deprecated auto opAssign(ValueType[] val ...) {
+			raw = val;
+		}
+		deprecated ref ValueType[] opGet() @property {
+			return raw;
+		}
+	} else {
+		auto opAssign(ValueType[] val ...) {
+			raw = val;
+		}
+		ref ValueType[] opGet() @property {
+			return raw;
+		}
 	}
-
 	alias opGet this;
-	ubyte[] opCast(T:ubyte[])() {
-		return serialize();
-	}
 
 	ubyte[] serialize() {
-		return (MsgType!T | (id << 3)).toVarint() ~ raw.writeProto!T();
+		// @TODO: Support nested repeated types
+		static if(packed) {
+			return (2 | (id << 3)).toVarint() ~ raw.length.toZigZag().toVarint() ~ raw.map!(a=>a.writeProto!BufferType())().joiner().array();
+		} else {
+			return raw.map!(a=>(MsgType!BufferType | (id << 3)).toVarint() ~ a.writeProto!BufferType())().joiner().array();
+		}
 	}
 	void deserialize(long msgdata, ref ubyte[] data) {
+		// @TODO: Support nested repeated types
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
-		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
-		raw ~= data.readProto!BufferType(); // Changes data by ref
+		if(packed && msgdata.wireType() == 2) {
+			auto length = data.readProto!"int32"();
+			auto myData = data[0 .. length];
+			data = data[length .. $];
+			while(myData.length) {
+				raw ~= myData.readProto!BufferType();
+			}
+		} else {
+			enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
+			raw ~= data.readProto!BufferType(); // Changes data by ref
+		}
 	}
 
 }
