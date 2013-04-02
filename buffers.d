@@ -20,8 +20,12 @@ import metus.dproto.exception;
 
 struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
-		alias BufferType = TypeString;
 		alias ValueType = RealType;
+		static if(is(ValueType == enum)) {
+			alias BufferType = ENUM_SERIALIZATION;
+		} else {
+			alias BufferType = TypeString;
+		}
 
 		bool isset=false;
 		ValueType raw;
@@ -65,8 +69,6 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	ubyte[] serialize() {
 		static if(IsBuiltinType(BufferType)) {
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
-		} else static if(is(RealType == enum)) {
-			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!ENUM_SERIALIZATION();
 		} else {
 			auto tmp = raw.serialize();
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
@@ -76,9 +78,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
 		static if(IsBuiltinType(BufferType)) {
-			raw = data.readProto!BufferType(); // Changes data by ref
-		} else static if(is(RealType == enum)) {
-			raw = data.readProto!ENUM_SERIALIZATION().to!RealType();
+			raw = data.readProto!BufferType().to!RealType(); // Changes data by ref
 		} else {
 			auto myData = data.readProto!"bytes"();
 			raw = RealType(myData);
@@ -89,8 +89,12 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
-		alias BufferType = TypeString;
 		alias ValueType = RealType;
+		static if(is(ValueType == enum)) {
+			alias BufferType = ENUM_SERIALIZATION;
+		} else {
+			alias BufferType = TypeString;
+		}
 
 		ValueType raw;
 	}
@@ -114,8 +118,6 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	ubyte[] serialize() {
 		static if(IsBuiltinType(BufferType)) {
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
-		} else static if(is(RealType == enum)) {
-			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!ENUM_SERIALIZATION();
 		} else {
 			auto tmp = raw.serialize();
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
@@ -125,9 +127,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
 		static if(IsBuiltinType(BufferType)) {
-			raw = data.readProto!BufferType(); // Changes data by ref
-		} else static if(is(RealType == enum)) {
-			raw = data.readProto!ENUM_SERIALIZATION().to!RealType();
+			raw = data.readProto!BufferType().to!RealType(); // Changes data by ref
 		} else {
 			auto myData = data.readProto!"bytes"();
 			raw = RealType(myData);
@@ -138,8 +138,12 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, bool packed=false) {
 	private {
-		alias BufferType = TypeString;
 		alias ValueType = RealType;
+		static if(is(ValueType == enum)) {
+			alias BufferType = ENUM_SERIALIZATION;
+		} else {
+			alias BufferType = TypeString;
+		}
 
 		ValueType[] raw = [];
 	}
@@ -176,17 +180,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			static if(IsBuiltinType(BufferType)) {
 				auto msg = raw.map!(writeProto!BufferType)().concat();
 				return (PACKED_MSG_TYPE | (id << 3)).toVarint() ~ msg.length.toVarint() ~ msg;
-			} else static if(is(RealType == enum)) {
-				auto msg = raw.map!(writeProto!ENUM_SERIALIZATION)().concat();
-				return (PACKED_MSG_TYPE | (id << 3)).toVarint() ~ msg.length.toVarint() ~ msg;
 			} else {
 				static assert(0, "Cannot have packed repeated message member");
 			}
 		} else {
 			static if(IsBuiltinType(BufferType)) {
 				return raw.map!(a=>(MsgType!BufferType | (id << 3)).toVarint() ~ a.writeProto!BufferType())().concat();
-			} else static if(is(RealType == enum)) {
-				return raw.map!(a=>(MsgType!BufferType | (id << 3)).toVarint() ~ a.writeProto!ENUM_SERIALIZATION())().concat();
 			} else {
 				return raw.map!((RealType a) {
 					auto msg = a.serialize();
@@ -202,12 +201,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			static if(IsBuiltinType(BufferType)) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
-					raw ~= myData.readProto!BufferType();
-				}
-			} else static if(is(RealType == enum)) {
-				auto myData = data.readProto!"bytes"();
-				while(myData.length) {
-					raw ~= myData.readProto!ENUM_SERIALIZATION();
+					raw ~= myData.readProto!BufferType().to!RealType();
 				}
 			} else {
 				static assert(0, "Cannot have packed repeated message member");
@@ -215,9 +209,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
 			static if(IsBuiltinType(BufferType)) {
-				raw ~= data.readProto!BufferType(); // Changes data by ref
-			} else static if(is(RealType == enum)) {
-				raw ~= data.readProto!ENUM_SERIALIZATION(); // Changes data by ref
+				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
 			} else {
 				auto myData = data.readProto!"bytes"(); // Changes data by ref
 				raw.deserialize(myData);
