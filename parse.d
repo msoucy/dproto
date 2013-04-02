@@ -234,8 +234,7 @@ private:
 		return new Service(name, methods);
 	}
 
-	/** Reads an enumerated type declaration and returns it.
-		@todo */
+	/** Reads an enumerated type declaration and returns it. */
 	EnumType readEnumType() {
 		auto ret = EnumType(readName());
 		enforce(readChar() == '{', unexpected("expected '{'"));
@@ -250,8 +249,7 @@ private:
 		return ret;
 	}
 
-	/** Reads an field declaration and returns it.
-		@todo */
+	/** Reads an field declaration and returns it. */
 	Field readField(string label) {
 		Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
 		string type = readName();
@@ -295,8 +293,7 @@ private:
 		return ret;
 	}
 
-	/** Reads a option containing a name, an '=' or ':', and a value.
-		@todo */
+	/** Reads a option containing a name, an '=' or ':', and a value. */
 	Option readOption(char keyValueSeparator) {
 		string name = readName(); // Option name.
 		enforce(readChar() == keyValueSeparator, unexpected("expected '" ~ keyValueSeparator ~ "' in option"));
@@ -308,7 +305,6 @@ private:
 	 * Returns a map of string keys and values. This is similar to a JSON object,
 	 * with '{' and '}' surrounding the map, ':' separating keys from values, and
 	 * ',' separating entries.
-	 * @todo
 	 */
 	Options readMap(char openBrace, char closeBrace, char keyValueSeparator) {
 		enforce(readChar() == openBrace, unexpected(openBrace ~ " to begin map"));

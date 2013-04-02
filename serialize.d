@@ -34,7 +34,6 @@ template BuffType(string T) {
 	else static if(T == "uint32") alias BuffType = uint;
 	else static if(T == "uint64") alias BuffType = ulong;
 	else static if(T == "bool") alias BuffType = bool;
-	else static if(T == "enum") alias BuffType = int;
 	// Msg type 1
 	else static if(T == "fixed64") alias BuffType = ulong;
 	else static if(T == "sfixed64") alias BuffType = long;
@@ -51,7 +50,7 @@ template BuffType(string T) {
 
 template MsgType(string T) {
 	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" ||
-			T == "uint32" || T == "uint64" || T == "bool" || T == "enum") {
+			T == "uint32" || T == "uint64" || T == "bool") {
 		enum MsgType = 0;
 	} else static if(T == "fixed64" || T == "sfixed64" || T == "double") {
 		enum MsgType = 1;
@@ -108,11 +107,16 @@ long fromVarint(ubyte[] src) @property {
 	return 0L.reduce!q{(a<<7)|(b&0x7F)}(src.retro());
 }
 
+alias concat = reduce!((a,b)=>a~b);
+
+enum ENUM_SERIALIZATION = "sint32";
+enum PACKED_MSG_TYPE = 2;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Type 0
 
 BuffType!T readProto(string T)(ref ubyte[] src)
-	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool" || T == "enum")
+	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
 {
 	return src.readVarint().fromVarint().to!(BuffType!T)();
 }
@@ -124,7 +128,7 @@ BuffType!T readProto(string T)(ref ubyte[] src)
 }
 
 ubyte[] writeProto(string T)(BuffType!T src)
-	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool" || T == "enum")
+	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
 {
 	return src.toVarint().dup;
 }

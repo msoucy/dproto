@@ -26,8 +26,8 @@ struct MessageType {
 	string name;
 	Options options;
 	Field[] fields;
-	MessageType[] messageTypes;
 	EnumType[] enumTypes;
+	MessageType[] messageTypes;
 
 	string toProto() @property {
 		string ret;
@@ -38,14 +38,15 @@ struct MessageType {
 		if(fields) {
 			ret ~= fields.map!(a=>a.toProto())().join();
 		}
-		ret ~= messageTypes.map!(a=>a.toProto())().join("\n");
 		ret ~= enumTypes.map!(a=>a.toProto())().join("\n");
+		ret ~= messageTypes.map!(a=>a.toProto())().join("\n");
 		ret ~= "}";
 		return ret;
 	}
 
 	string toD() {
 		return `struct %s {
+	%s
 	%s
 
 	ubyte[] serialize() {
@@ -71,11 +72,12 @@ struct MessageType {
 	}
 }`.format(
 			name,
+			messageTypes.map!(a=>a.toD())().join(),
 			fields.map!(a=>a.getDeclaration())().join("\n\t"),
 			fields.map!(a=>a.name~".serialize()")().join(" ~ "),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join(),
+			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join("\n\t\t"),
 			fields.map!(a=>a.getCase())().join("\n\t\t\t\t"),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join(" = false, ")
+			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join("\n\t\t")
 		);
 	}
 }
@@ -93,12 +95,23 @@ struct EnumType {
 		ret ~= "enum %s {".format(name);
 		ret ~= "%(%s%)".format(options);
 		foreach(key, val;values) {
-			ret ~= "%s = %s,".format(key, val);
+			ret ~= "%s = %s;".format(key, val);
 		}
 		ret ~= "}";
 		return ret;
 	}
-	alias toD = toProto;
+	string toD() @property {
+		string members;
+		foreach(key, val; values) {
+			members ~= "%s = %s, ".format(key, val);
+		}
+		string ret = `enum %s {
+	%s
+}
+%s readProto(string T)(ref ubyte[] src) if(T == "%s") { return src.readVarint().fromVarint().to!(%s)(); }
+ubyte[] serialize(%s src) { return src.toVarint().dup; }`.format(name, members, name, name, name, name);
+		return ret;
+	}
 }
 
 struct Option {
@@ -122,8 +135,8 @@ struct ProtoPackage {
 	string fileName;
 	string packageName;
 	string[] dependencies;
-	MessageType[] messageTypes;
 	EnumType[] enumTypes;
+	MessageType[] messageTypes;
 	Options options;
 	string toProto() @property {
 		string ret;
@@ -133,11 +146,11 @@ struct ProtoPackage {
 		foreach(dep;dependencies) {
 			ret ~= `import "%s";`.format(dep);
 		}
-		foreach(msg;messageTypes) {
-			ret ~= msg.toProto();
-		}
 		foreach(e;enumTypes) {
 			ret ~= e.toProto();
+		}
+		foreach(msg;messageTypes) {
+			ret ~= msg.toProto();
 		}
 		if(options) {
 			ret ~= "%(%s%)".format(options);
@@ -149,11 +162,11 @@ struct ProtoPackage {
 		foreach(dep;dependencies) {
 			ret ~= "mixin ProtocolBuffer!\"%s\";\n".format(dep);
 		}
-		foreach(msg;messageTypes) {
-			ret ~= msg.toD()~'\n';
-		}
 		foreach(e;enumTypes) {
 			ret ~= e.toD()~'\n';
+		}
+		foreach(msg;messageTypes) {
+			ret ~= msg.toD()~'\n';
 		}
 		return ret;
 	}
@@ -193,12 +206,10 @@ struct Field {
 		} else {
 			ret ~= type;
 		}
-		if(auto packed = "deprecated" in options) {
-			if(*packed == "true") {
-				ret ~= ", true";
-			} else {
-				ret ~= ", false";
-			}
+		if(auto dep = "deprecated" in options) {
+			ret ~= ", "~(*dep);
+		} else {
+			ret ~= ", false";
 		}
 		if(requirement == Requirement.REPEATED) {
 			auto packed = "packed" in options;
