@@ -211,7 +211,13 @@ struct Field {
 		} else {
 			ret ~= ", false";
 		}
-		if(requirement == Requirement.REPEATED) {
+		if(requirement == Requirement.OPTIONAL) {
+			if(auto dV = "default" in options) {
+				ret ~= ", "~(*dV);
+			} else {
+				ret ~= `, (BuffType!"%s").init`.format(type);
+			}
+		} else if(requirement == Requirement.REPEATED) {
 			auto packed = "packed" in options;
 			if(packed !is null && *packed == "true") {
 				ret ~= ", true";

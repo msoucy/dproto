@@ -18,7 +18,7 @@ import std.stdio;
 import metus.dproto.serialize;
 import metus.dproto.exception;
 
-struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
+struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, alias defaultValue=RealType.init) {
 	private {
 		alias ValueType = RealType;
 		static if(is(ValueType == enum)) {
@@ -28,7 +28,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 
 		bool isset=false;
-		ValueType raw;
+		ValueType raw = defaultValue;
 	}
 
 
@@ -37,10 +37,10 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	void clean() @property {
 		isset = false;
-		raw = ValueType.init;
+		raw = defaultValue;
 	}
 
-	this(ValueType val = ValueType.init) {
+	this(ValueType val = defaultValue) {
 		isset = true;
 		raw = val;
 	}
