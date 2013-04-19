@@ -212,8 +212,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			static if(IsBuiltinType(BufferType)) {
 				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
 			} else {
-				auto myData = data.readProto!"bytes"(); // Changes data by ref
-				raw.deserialize(myData);
+				raw ~= ValueType(data.readProto!"bytes"());
 			}
 		}
 	}

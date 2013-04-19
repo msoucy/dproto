@@ -29,8 +29,8 @@ struct MessageType {
 	string toProto() @property {
 		string ret;
 		ret ~= "message %s {".format(name);
-		if(options) {
-			ret ~= "[%(%s,%)]".format(options);
+		foreach(opt, val;options) {
+			ret ~= "option %s = %s;".format(opt, val);
 		}
 		if(fields) {
 			ret ~= fields.map!(a=>a.toProto())().join();
