@@ -17,9 +17,13 @@ import std.string : endsWith;
 import std.exception : enforce;
 
 template ProtocolBuffer(string s) {
+	mixin(ProtocolBufferString!s);
+}
+
+template ProtocolBufferString(string s) {
 	static if(s.endsWith(".proto")) {
-		mixin(ProtoSchemaParser.parse(s,import(s)).toD());
+		enum ProtocolBufferString = ProtoSchemaParser.parse(s,import(s)).toD();
 	} else {
-		mixin(ProtoSchemaParser.parse("<none>",s).toD());
+		enum ProtocolBufferString = ProtoSchemaParser.parse("<none>",s).toD();
 	}
 }

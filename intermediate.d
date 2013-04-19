@@ -11,10 +11,7 @@ module metus.dproto.intermediate;
 import metus.dproto.serialize;
 
 import std.algorithm;
-import std.array;
 import std.conv;
-import std.range;
-import std.stdio;
 import std.string;
 
 alias Options = string[string];
@@ -53,12 +50,12 @@ struct MessageType {
 		return %s;
 	}
 
-	this(ubyte[] data) {
+	void deserialize(ubyte[] data) {
 		// Required flags
 		%s
 
 		while(data.length) {
-			auto msgdata = data.readMsgData();
+			auto msgdata = data.readVarint();
 			switch(msgdata.msgNum()) {
 				%s
 				default: {
@@ -69,6 +66,10 @@ struct MessageType {
 
 		// Check required flags
 		%s
+	}
+
+	this(ubyte[] data) {
+		deserialize(data);
 	}
 }`.format(
 			name,
@@ -105,10 +106,8 @@ struct EnumType {
 		foreach(key, val; values) {
 			members ~= "%s = %s, ".format(key, val);
 		}
-		string ret = `enum %s {
-	%s
-}
-%s readProto(string T)(ref ubyte[] src) if(T == "%s") { return src.readVarint().fromVarint().to!(%s)(); }
+		string ret = `enum %s {%s}
+%s readProto(string T)(ref ubyte[] src) if(T == "%s") { return src.readVarint().to!(%s)(); }
 ubyte[] serialize(%s src) { return src.toVarint().dup; }`.format(name, members, name, name, name, name);
 		return ret;
 	}

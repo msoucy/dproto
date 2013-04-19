@@ -31,11 +31,7 @@ final struct ProtoSchemaParser {
 public:
 	/** Parse a named {@code .proto} schema. */
 	static ProtoPackage parse(string name, string data) {
-		try {
-			return (new ProtoSchemaParser(name, data)).readProtoPackage();
-		} catch(DProtoException e) {
-			assert(0,e.msg);
-		}
+		return (new ProtoSchemaParser(name, data)).readProtoPackage();
 	}
 
 private:

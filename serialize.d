@@ -15,16 +15,28 @@ import std.bitmanip;
 import std.conv;
 import std.exception;
 import std.range;
-import std.stdio;
-import std.system;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Utilities
 
+/**
+ * Returns whether the given string is a protocol buffer primitive
+ *
+ * @param T The type to check
+ * @return true if the type is a protocol buffer primitive
+ */
 bool IsBuiltinType(string T) {
 	return ["int32" , "sint32", "int64", "sint64", "uint32", "uint64", "bool",
-			"enum", "fixed64", "sfixed64", "double", "bytes", "string",
+			"fixed64", "sfixed64", "double", "bytes", "string",
 			"fixed32", "sfixed32", "float"].canFind(T);
+}
+
+unittest {
+	assert(IsBuiltinType("sfixed32") == true);
+	assert(IsBuiltinType("double") == true);
+	assert(IsBuiltinType("string") == true);
+	assert(IsBuiltinType("int128") == false);
+	assert(IsBuiltinType("quad") == false);
 }
 
 template BuffType(string T) {
@@ -48,6 +60,14 @@ template BuffType(string T) {
 	else static if(T == "float") alias BuffType = float;
 }
 
+unittest {
+	assert(is(BuffType!"sfixed32" == int) == true);
+	assert(is(BuffType!"double" == double) == true);
+	assert(is(BuffType!"string" == string) == true);
+	assert(is(BuffType!"bytes" == ubyte[]) == true);
+	assert(is(BuffType!"sfixed64" == int) == false);
+}
+
 template MsgType(string T) {
 	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" ||
 			T == "uint32" || T == "uint64" || T == "bool") {
@@ -67,28 +87,52 @@ ulong toZigZag(long src) @property pure nothrow {
 	return (src << 1) ^ (src >> 63);
 }
 
+unittest {
+	assert(0.toZigZag() == 0);
+	assert((-1).toZigZag() == 1);
+	assert(1.toZigZag() == 2);
+	assert((-2).toZigZag() == 3);
+	assert(2147483647.toZigZag() == 4294967294);
+	assert((-2147483648).toZigZag() == 4294967295);
+}
+
 long fromZigZag(ulong src) @property pure nothrow {
 	return (cast(long)(src >> 1)) ^ (cast(long)(-(src & 1)));
+}
+
+unittest {
+	assert(0.fromZigZag() == 0);
+	assert(1.fromZigZag() == -1);
+	assert(2.fromZigZag() == 1);
+	assert(3.fromZigZag() == -2);
+	assert(4294967294.fromZigZag() == 2147483647);
+	assert(4294967295.fromZigZag() == -2147483648);
 }
 
 ubyte wireType(ulong data) @property pure nothrow {
 	return data&7;
 }
 
+unittest {
+	assert((0x08).wireType() == 0); // Test for varints
+	assert((0x09).wireType() == 1); // Test 64-bit
+	assert((0x12).wireType() == 2); // Test length-delimited
+}
+
 ulong msgNum(ulong data) @property pure nothrow {
 	return data>>3;
 }
 
-long readMsgData(ref ubyte[] src) {
-	size_t i = src.countUntil!q{!(a&0x80)}();
-	auto ret = src[0..i+1].fromVarint();
-	src = src[i+1..$];
-	return ret;
+unittest {
+	assert((0x08).msgNum() == 1);
+	assert((0x11).msgNum() == 2);
+	assert((0x1a).msgNum() == 3);
+	assert((0x22).msgNum() == 4);
 }
 
-ubyte[] readVarint(ref ubyte[] src) {
+long readVarint(ref ubyte[] src) {
 	size_t i = src.countUntil!q{!(a&0x80)}();
-	auto ret = src[0..i+1];
+	auto ret = src[0..i+1].fromVarint();
 	src = src[i+1..$];
 	return ret;
 }
@@ -103,13 +147,25 @@ ubyte[] toVarint(long src) @property pure nothrow {
 	return ret;
 }
 
+unittest {
+	assert(150.toVarint == [0x96, 0x01]);
+	assert(3.toVarint == [0x03]);
+	assert(270.toVarint == [0x8E, 0x02]);
+	assert(86942.toVarint == [0x9E, 0xA7, 0x05]);
+}
+
 long fromVarint(ubyte[] src) @property {
 	return 0L.reduce!q{(a<<7)|(b&0x7F)}(src.retro());
 }
 
-alias concat = reduce!((a,b)=>a~b);
+unittest {
+	assert([0x96, 0x01].fromVarint() == 150);
+	assert([0x03].fromVarint() == 3);
+	assert([0x8E, 0x02].fromVarint() == 270);
+	assert([0x9E, 0xA7, 0x05].fromVarint() == 86942);
+}
 
-enum ENUM_SERIALIZATION = "sint32";
+enum ENUM_SERIALIZATION = "int32";
 enum PACKED_MSG_TYPE = 2;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,13 +174,13 @@ enum PACKED_MSG_TYPE = 2;
 BuffType!T readProto(string T)(ref ubyte[] src)
 	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
 {
-	return src.readVarint().fromVarint().to!(BuffType!T)();
+	return src.readVarint().to!(BuffType!T)();
 }
 
 BuffType!T readProto(string T)(ref ubyte[] src)
 	if(T == "sint32" || T == "sint64")
 {
-	return src.readVarint().fromVarint().fromZigZag().to!(BuffType!T)();
+	return src.readVarint().fromZigZag().to!(BuffType!T)();
 }
 
 ubyte[] writeProto(string T)(BuffType!T src)

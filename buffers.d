@@ -8,12 +8,10 @@
 /// Protocol buffer structs
 module metus.dproto.buffers;
 
-//import std.conv;
 import std.algorithm;
 import std.array;
 import std.conv;
 import std.exception;
-import std.stdio;
 
 import metus.dproto.serialize;
 import metus.dproto.exception;
@@ -32,10 +30,10 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 
 
-	bool exists() const @property {
+	bool exists() const @property nothrow {
 		return isset;
 	}
-	void clean() @property {
+	void clean() @property nothrow {
 		isset = false;
 		raw = defaultValue;
 	}
@@ -67,11 +65,15 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	alias opGet this;
 
 	ubyte[] serialize() {
-		static if(IsBuiltinType(BufferType)) {
-			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
+		if(isset) {
+			static if(IsBuiltinType(BufferType)) {
+				return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
+			} else {
+				auto tmp = raw.serialize();
+				return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
+			}
 		} else {
-			auto tmp = raw.serialize();
-			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
+			return [];
 		}
 	}
 	void deserialize(long msgdata, ref ubyte[] data) {
@@ -80,9 +82,9 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType(); // Changes data by ref
 		} else {
-			auto myData = data.readProto!"bytes"();
-			raw = RealType(myData);
+			raw.deserialize(data.readProto!"bytes"());
 		}
+		isset = true;
 	}
 
 }
@@ -129,8 +131,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType(); // Changes data by ref
 		} else {
-			auto myData = data.readProto!"bytes"();
-			raw = RealType(myData);
+			raw.deserialize(data.readProto!"bytes"());
 		}
 	}
 
@@ -148,7 +149,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		ValueType[] raw = [];
 	}
 
-	void clean() @property {
+	void clean() @property nothrow {
 		raw.length = 0;
 	}
 
@@ -178,19 +179,19 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	ubyte[] serialize() {
 		static if(packed) {
 			static if(IsBuiltinType(BufferType)) {
-				auto msg = raw.map!(writeProto!BufferType)().concat();
+				auto msg = raw.map!(writeProto!BufferType)().join();
 				return (PACKED_MSG_TYPE | (id << 3)).toVarint() ~ msg.length.toVarint() ~ msg;
 			} else {
 				static assert(0, "Cannot have packed repeated message member");
 			}
 		} else {
 			static if(IsBuiltinType(BufferType)) {
-				return raw.map!(a=>(MsgType!BufferType | (id << 3)).toVarint() ~ a.writeProto!BufferType())().concat();
+				return raw.map!(a=>(MsgType!BufferType | (id << 3)).toVarint() ~ a.writeProto!BufferType())().join();
 			} else {
 				return raw.map!((RealType a) {
 					auto msg = a.serialize();
 					return (MsgType!BufferType | (id << 3)).toVarint() ~ msg.length.toVarint() ~ msg;
-				})().concat();
+				})().join();
 			}
 		}
 	}
