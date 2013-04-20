@@ -1,11 +1,12 @@
-/**
- * @file intermediate.d
- * @brief Intermediate structures used for generating class strings
- * @author Matthew Soucy <msoucy@csh.rit.edu>
- * @date Mar 5, 2013
- * @version 0.0.1
+/*******************************************************************************
+ * Intermediate structures used for generating class strings
+ *
+ * These are only used internally, so are not being exported
+ *
+ * Authors: Matthew Soucy, msoucy@csh.rit.edu
+ * Date: Mar 5, 2013
+ * Version: 0.0.1
  */
-/// D protobuf intermediate storage
 module metus.dproto.intermediate;
 
 import metus.dproto.serialize;
@@ -13,6 +14,8 @@ import metus.dproto.serialize;
 import std.algorithm;
 import std.conv;
 import std.string;
+
+package:
 
 alias Options = string[string];
 

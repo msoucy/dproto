@@ -1,11 +1,10 @@
-/**
- * @file buffers.d
- * @brief Holds the Buffer types used in created classes
- * @author Matthew Soucy <msoucy@csh.rit.edu>
- * @date Mar 19, 2013
- * @version 0.0.1
+/*******************************************************************************
+ * Holds the Buffer types used in created classes
+ *
+ * Authors: Matthew Soucy, msoucy@csh.rit.edu
+ * Date: Mar 19, 2013
+ * Version: 0.0.1
  */
-/// Protocol buffer structs
 module metus.dproto.buffers;
 
 import std.algorithm;
@@ -16,6 +15,18 @@ import std.exception;
 import metus.dproto.serialize;
 import metus.dproto.exception;
 
+/*******************************************************************************
+ * Optional buffers can be optionally not sent/received.
+ *
+ * If this type is not set, then it does not send the default value.
+ *
+ * Params:
+ * 		id			=	The numeric ID for the message
+ *		TypeString	=	The encoding type of the data
+ *		RealType	=	The type the data is stored as internally
+ *		isDeprecated=	Deprecates the accessors if true
+ *		defaultValue=	The default value for the internal storage
+ */
 struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, alias defaultValue=RealType.init) {
 	private {
 		alias ValueType = RealType;
@@ -30,15 +41,27 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 
 
+	/***************************************************************************
+	 * Test the existence of a value
+	 */
 	bool exists() const @property nothrow {
 		return isset;
 	}
-	void clean() @property nothrow {
+	/***************************************************************************
+	 * Clears the value, marks as not set
+	 */
+	void clean() nothrow {
 		isset = false;
 		raw = defaultValue;
 	}
 
-	this(ValueType val = defaultValue) {
+	/***************************************************************************
+	 * Create a Buffer
+	 *
+	 * Params:
+	 * 		val	=	The value to populate with
+	 */
+	this(ValueType val) {
 		isset = true;
 		raw = val;
 	}
@@ -64,6 +87,11 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
+	/***************************************************************************
+	 * Serialize the buffer
+	 *
+	 * Returns: The proto-encoded data, or an empty array if the buffer is not set
+	 */
 	ubyte[] serialize() {
 		if(isset) {
 			static if(IsBuiltinType(BufferType)) {
@@ -76,6 +104,15 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			return [];
 		}
 	}
+	/***************************************************************************
+	 * Deserialize data into a buffer
+	 *
+	 * This marks the buffer as being set.
+	 *
+	 * Params:
+	 * 		msgdata	=	The message's ID and type
+	 * 		data	=	The data to decode
+	 */
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
@@ -89,6 +126,15 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 }
 
+/*******************************************************************************
+ * Required buffers must be both sent and received
+ *
+ * Params:
+ * 		id			=	The numeric ID for the message
+ *		TypeString	=	The encoding type of the data
+ *		RealType	=	The type the data is stored as internally
+ *		isDeprecated=	Deprecates the accessors if true
+ */
 struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
 		alias ValueType = RealType;
@@ -101,6 +147,12 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		ValueType raw;
 	}
 
+	/***************************************************************************
+	 * Create a Buffer
+	 *
+	 * Params:
+	 * 		val	=	The value to populate with
+	 */
 	this(ValueType val) {
 		raw = val;
 	}
@@ -117,6 +169,11 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	alias opGet this;
 
 
+	/***************************************************************************
+	 * Serialize the buffer
+	 *
+	 * Returns: The proto-encoded data
+	 */
 	ubyte[] serialize() {
 		static if(IsBuiltinType(BufferType)) {
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ raw.writeProto!BufferType();
@@ -125,6 +182,13 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			return (MsgType!BufferType | (id << 3)).toVarint() ~ tmp.length.toVarint() ~ tmp;
 		}
 	}
+	/***************************************************************************
+	 * Deserialize data into a buffer
+	 *
+	 * Params:
+	 * 		msgdata	=	The message's ID and type
+	 * 		data	=	The data to decode
+	 */
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		enforce(msgdata.wireType() == MsgType!BufferType, new DProtoException("Type mismatch"));
@@ -137,6 +201,19 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 }
 
+/*******************************************************************************
+ * Repeated buffers can store multiple values
+ *
+ * They also support Packed data for primitives,
+ * which is a more efficient encoding method.
+ *
+ * Params:
+ * 		id			=	The numeric ID for the message
+ *		TypeString	=	The encoding type of the data
+ *		RealType	=	The type the data is stored as internally
+ *		isDeprecated=	Deprecates the accessors if true
+ *		packed		=	The default value for the internal storage
+ */
 struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, bool packed=false) {
 	private {
 		alias ValueType = RealType;
@@ -149,10 +226,19 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		ValueType[] raw = [];
 	}
 
-	void clean() @property nothrow {
+	/***************************************************************************
+	 * Clears the stored values
+	 */
+	void clean() nothrow {
 		raw.length = 0;
 	}
 
+	/***************************************************************************
+	 * Create a Buffer
+	 *
+	 * Params:
+	 * 		val	=	The value to populate with
+	 */
 	this(ValueType[] val ...) {
 		raw = val;
 	}
@@ -176,6 +262,14 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
+	/***************************************************************************
+	 * Serialize the buffer
+	 *
+	 * If the buffer is marked as packed and the type is primitive,
+	 * then it will attempt to pack the data.
+	 *
+	 * Returns: The proto-encoded data
+	 */
 	ubyte[] serialize() {
 		static if(packed) {
 			static if(IsBuiltinType(BufferType)) {
@@ -195,6 +289,18 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			}
 		}
 	}
+	/***************************************************************************
+	 * Deserialize data into a buffer
+	 *
+	 * Received data is appended to the array.
+	 *
+	 * If the buffer is marked as packed, then it will attempt to parse the data
+	 * as a packed buffer. Otherwise, it unpacks an individual element.
+	 *
+	 * Params:
+	 * 		msgdata	=	The message's ID and type
+	 * 		data	=	The data to decode
+	 */
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
 		static if(packed) {

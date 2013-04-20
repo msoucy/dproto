@@ -1,0 +1,11 @@
+{
+	"name": "dproto",
+	"description": "D Protocol Buffer library",
+	"homepage": "http://github.com/msoucy/dproto",
+	"copyright": "Copyright © 2013, Matt Soucy",
+	"authors": [
+		"Matt Soucy"
+	],
+	"dependencies": {
+	}
+}

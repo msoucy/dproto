@@ -1,11 +1,10 @@
-/**
- * @file parse.d
- * @brief Convert a .proto file into a string representing the class
- * @author Matthew Soucy <msoucy@csh.rit.edu>
- * @date Mar 20, 2013
- * @version 0.0.1
+/*******************************************************************************
+ * Convert a .proto file into a string representing the class
+ *
+ * Author: Matthew Soucy, msoucy@csh.rit.edu
+ * Date: Mar 20, 2013
+ * Version: 0.0.1
  */
-/// D protocol buffer parser
 module metus.dproto.parse;
 
 import metus.dproto.exception;
@@ -77,7 +76,6 @@ public:
 
 private:
 
-	/// @todo
 	void readDeclaration(Context, string ContextName = Context.stringof)(ref Context context) {
 		// Skip unnecessary semicolons, occasionally used after a nested message declaration.
 		if (peekChar() == ';') {
@@ -141,9 +139,12 @@ private:
 			}
 			/+
 			case "rpc": {
-				enforce(context.permitsRpc(), unexpected("rpc in " ~ context));
-				readRpc();
-				return;
+				static if( hasMember!(Context, "rpc")) {
+					readRpc();
+					return;
+				} else {
+					throw unexpected("rpc in " ~ context)
+				}
 			}
 			+/
 			case "required":
@@ -549,33 +550,4 @@ private:
 				.format(fileName, line+1, (pos - lineStart + 1), message));
 	}
 
-}
-
-enum ContextEnum {
-	FILE,
-	MESSAGE,
-	ENUM,
-	RPC,
-	EXTEND,
-	SERVICE
-}
-
-bool permitsPackage(ContextEnum context) {
-	return context == ContextEnum.FILE;
-}
-
-bool permitsImport(ContextEnum context) {
-	return context == ContextEnum.FILE;
-}
-
-bool permitsField(ContextEnum context) {
-	return context == ContextEnum.MESSAGE || context == ContextEnum.EXTEND;
-}
-
-bool permitsExtensions(ContextEnum context) {
-	return context != ContextEnum.FILE;
-}
-
-bool permitsRpc(ContextEnum context) {
-	return context == ContextEnum.SERVICE;
 }
