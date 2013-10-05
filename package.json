@@ -3,6 +3,7 @@
 	"description": "D Protocol Buffer library",
 	"homepage": "http://github.com/msoucy/dproto",
 	"copyright": "Copyright © 2013, Matt Soucy",
+	"license": "BSD 3-Clause",
 	"authors": [
 		"Matt Soucy"
 	],
