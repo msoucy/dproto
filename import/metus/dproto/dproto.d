@@ -33,8 +33,8 @@ template ProtocolBuffer(string s) {
  */
 template ProtocolBufferString(string s) {
 	static if(s.endsWith(".proto")) {
-		enum ProtocolBufferString = ProtoSchemaParser.parse(s,import(s)).toD();
+		enum ProtocolBufferString = ParseProtoSchema(s,import(s)).toD();
 	} else {
-		enum ProtocolBufferString = ProtoSchemaParser.parse("<none>",s).toD();
+		enum ProtocolBufferString = ParseProtoSchema("<none>",s).toD();
 	}
 }
