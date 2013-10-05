@@ -2,8 +2,8 @@
  * Serialization/deserialization code
  *
  * Author: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Mar 5, 2013
- * Version: 0.0.1
+ * Date: Oct 5, 2013
+ * Version: 0.0.2
  */
 module dproto.serialize;
 

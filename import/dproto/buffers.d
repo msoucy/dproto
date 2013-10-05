@@ -2,8 +2,8 @@
  * Holds the Buffer types used in created classes
  *
  * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Mar 19, 2013
- * Version: 0.0.1
+ * Date: Oct 5, 2013
+ * Version: 0.0.2
  */
 module dproto.buffers;
 
