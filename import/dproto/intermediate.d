@@ -7,9 +7,9 @@
  * Date: Mar 5, 2013
  * Version: 0.0.1
  */
-module metus.dproto.intermediate;
+module dproto.intermediate;
 
-import metus.dproto.serialize;
+import dproto.serialize;
 
 import std.algorithm;
 import std.conv;

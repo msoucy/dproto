@@ -5,9 +5,9 @@
  * Date: Mar 5, 2013
  * Version: 0.0.1
  */
-module metus.dproto.serialize;
+module dproto.serialize;
 
-import metus.dproto.exception;
+import dproto.exception;
 
 import std.algorithm;
 import std.bitmanip;

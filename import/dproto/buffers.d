@@ -5,15 +5,15 @@
  * Date: Mar 19, 2013
  * Version: 0.0.1
  */
-module metus.dproto.buffers;
+module dproto.buffers;
 
 import std.algorithm;
 import std.array;
 import std.conv;
 import std.exception;
 
-import metus.dproto.serialize;
-import metus.dproto.exception;
+import dproto.serialize;
+import dproto.exception;
 
 /*******************************************************************************
  * Optional buffers can be optionally not sent/received.

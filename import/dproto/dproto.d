@@ -7,12 +7,12 @@
  * Date: Mar 19, 2013
  * Version: 0.0.1
  */
-module metus.dproto.dproto;
+module dproto.dproto;
 
-public import metus.dproto.buffers;
-public import metus.dproto.exception;
-public import metus.dproto.parse;
-public import metus.dproto.serialize;
+public import dproto.buffers;
+public import dproto.exception;
+public import dproto.parse;
+public import dproto.serialize;
 
 import std.string : endsWith;
 import std.exception : enforce;

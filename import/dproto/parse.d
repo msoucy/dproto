@@ -5,10 +5,10 @@
  * Date: Mar 20, 2013
  * Version: 0.0.1
  */
-module metus.dproto.parse;
+module dproto.parse;
 
-import metus.dproto.exception;
-import metus.dproto.intermediate;
+import dproto.exception;
+import dproto.intermediate;
 
 import std.algorithm;
 import std.array;

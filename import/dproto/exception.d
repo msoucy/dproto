@@ -5,7 +5,7 @@
  * Date: Mar 5, 2013
  * Version: 0.0.1
  */
-module metus.dproto.exception;
+module dproto.exception;
 
 /*******************************************************************************
  * Basic exception, something went wrong with creating a buffer struct
