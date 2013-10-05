@@ -19,7 +19,7 @@ import std.range;
  * Returns whether the given string is a protocol buffer primitive
  *
  * Params:
- * 		type	=	The type to check for
+ *  	type = The type to check for
  * Returns: True if the type is a protocol buffer primitive
  */
 bool IsBuiltinType(string type) @safe pure nothrow {
@@ -90,7 +90,7 @@ template MsgType(string T) {
  * Encodes a number in its zigzag encoding
  *
  * Params:
- * 		src		=	The raw integer to encode
+ *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
 ulong toZigZag(long src) @safe @property pure nothrow {
@@ -110,7 +110,7 @@ unittest {
  * Decodes a number from its zigzag encoding
  *
  * Params:
- * 		src		=	The zigzag-encoded value to decode
+ *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
 long fromZigZag(ulong src) @safe @property pure nothrow {
@@ -130,7 +130,7 @@ unittest {
  * Get the wire type from the encoding value
  *
  * Params:
- * 		data	=	The data header
+ *  	data = The data header
  * Returns: The wire type value
  */
 ubyte wireType(ulong data) @safe @property pure nothrow {
@@ -147,7 +147,7 @@ unittest {
  * Get the message number from the encoding value
  *
  * Params:
- * 		data	=	The data header
+ *  	data = The data header
  * Returns: The message number
  */
 ulong msgNum(ulong data) @safe @property pure nothrow {
@@ -167,7 +167,7 @@ unittest {
  * Removes the bytes that represent the data from the stream
  *
  * Params:
- * 		src		=	The data stream
+ *  	src = The data stream
  * Returns: The decoded value
  */
 long readVarint(ref ubyte[] src) {
@@ -181,7 +181,7 @@ long readVarint(ref ubyte[] src) {
  * Encode a value into a VarInt-encoded series of bytes
  *
  * Params:
- * 		src		=	The value to encode
+ *  	src = The value to encode
  * Returns: The created VarInt
  */
 ubyte[] toVarint(long src) @property pure nothrow {
@@ -205,7 +205,7 @@ unittest {
  * Decode a VarInt-encoded series of bytes into a value
  *
  * Params:
- * 		src		=	The data stream
+ *  	src = The data stream
  * Returns: The decoded value
  */
 long fromVarint(ubyte[] src) @property {
@@ -228,7 +228,7 @@ enum PACKED_MSG_TYPE = 2;
  * Decode a series of bytes into a value
  *
  * Params:
- * 		src		=	The data stream
+ *  	src = The data stream
  * Returns: The decoded value
  */
 BuffType!T readProto(string T)(ref ubyte[] src)
@@ -268,7 +268,7 @@ BuffType!T readProto(string T)(ref ubyte[] src)
  * Encode a value into a series of bytes
  *
  * Params:
- * 		src		=	The raw data
+ *  	src = The raw data
  * Returns: The encoded value
  */
 ubyte[] writeProto(string T)(BuffType!T src)

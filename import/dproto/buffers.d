@@ -21,11 +21,11 @@ import dproto.exception;
  * If this type is not set, then it does not send the default value.
  *
  * Params:
- * 		id			=	The numeric ID for the message
- *		TypeString	=	The encoding type of the data
- *		RealType	=	The type the data is stored as internally
- *		isDeprecated=	Deprecates the accessors if true
- *		defaultValue=	The default value for the internal storage
+ *  	id           = The numeric ID for the message
+ *  	TypeString   = The encoding type of the data
+ *  	RealType     = The type the data is stored as internally
+ *  	isDeprecated = Deprecates the accessors if true
+ *  	defaultValue = The default value for the internal storage
  */
 struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, alias defaultValue=RealType.init) {
 	private {
@@ -59,7 +59,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Create a Buffer
 	 *
 	 * Params:
-	 * 		val	=	The value to populate with
+	 *  	val = The value to populate with
 	 */
 	this(ValueType val) {
 		isset = true;
@@ -130,10 +130,10 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
  * Required buffers must be both sent and received
  *
  * Params:
- * 		id			=	The numeric ID for the message
- *		TypeString	=	The encoding type of the data
- *		RealType	=	The type the data is stored as internally
- *		isDeprecated=	Deprecates the accessors if true
+ *  	id           = The numeric ID for the message
+ *  	TypeString   = The encoding type of the data
+ *  	RealType     = The type the data is stored as internally
+ *  	isDeprecated = Deprecates the accessors if true
  */
 struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
 	private {
@@ -151,7 +151,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Create a Buffer
 	 *
 	 * Params:
-	 * 		val	=	The value to populate with
+	 *     val = The value to populate with
 	 */
 	this(ValueType val) {
 		raw = val;
@@ -186,8 +186,8 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Deserialize data into a buffer
 	 *
 	 * Params:
-	 * 		msgdata	=	The message's ID and type
-	 * 		data	=	The data to decode
+	 *  	msgdata = The message's ID and type
+	 *  	data    = The data to decode
 	 */
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
@@ -208,11 +208,11 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
  * which is a more efficient encoding method.
  *
  * Params:
- * 		id			=	The numeric ID for the message
- *		TypeString	=	The encoding type of the data
- *		RealType	=	The type the data is stored as internally
- *		isDeprecated=	Deprecates the accessors if true
- *		packed		=	The default value for the internal storage
+ *  	id           = The numeric ID for the message
+ *  	TypeString   = The encoding type of the data
+ *  	RealType     = The type the data is stored as internally
+ *  	isDeprecated = Deprecates the accessors if true
+ *  	packed       = The default value for the internal storage
  */
 struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, bool packed=false) {
 	private {
@@ -237,7 +237,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Create a Buffer
 	 *
 	 * Params:
-	 * 		val	=	The value to populate with
+	 *  	val = The value to populate with
 	 */
 	this(ValueType[] val ...) {
 		raw = val;
@@ -298,8 +298,8 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * as a packed buffer. Otherwise, it unpacks an individual element.
 	 *
 	 * Params:
-	 * 		msgdata	=	The message's ID and type
-	 * 		data	=	The data to decode
+	 *  	msgdata = The message's ID and type
+	 *  	data    = The data to decode
 	 */
 	void deserialize(long msgdata, ref ubyte[] data) {
 		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
