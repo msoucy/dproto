@@ -13,6 +13,8 @@ module dproto.dproto;
  * Create structures from proto data
  *
  * Creates all required structs given a valid proto file/data string
+ *
+ * This mixin does the actual creation of struct information
  */
 template ProtocolBuffer(string s)
 {

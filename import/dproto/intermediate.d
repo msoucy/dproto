@@ -62,7 +62,7 @@ struct MessageType {
 			switch(msgdata.msgNum()) {
 				%s
 				default: {
-					/// @todo: Figure out how to handle this stuff
+					/// @todo: Safely ignore unrecognized messages
 				}
 			}
 		}

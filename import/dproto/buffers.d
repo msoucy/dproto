@@ -244,7 +244,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 
 	static if(isDeprecated) {
-		deprecated auto opAssign(ValueType[] val ...) {
+		deprecated auto opAssign(ValueType[] val) {
 			raw = val;
 			return this;
 		}
@@ -252,7 +252,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			return raw;
 		}
 	} else {
-		auto opAssign(ValueType[] val ...) {
+		auto opAssign(ValueType[] val) {
 			raw = val;
 			return this;
 		}
