@@ -9,35 +9,34 @@
  */
 module dproto.dproto;
 
+import std.exception : enforce;
+
 /*******************************************************************************
- * Create structures from proto data
+ * Create D structures from proto file
  *
- * Creates all required structs given a valid proto file/data string
+ * Creates all required structs given a valid proto file
  *
- * This mixin does the actual creation of struct information
+ * Assumes that the file can be found in the string imports
  */
 template ProtocolBuffer(string s)
 {
-	import std.exception : enforce;
 	import dproto.buffers;
 	import dproto.exception;
 	import dproto.serialize;
-
-	mixin(ProtocolBufferString!s);
+	import dproto.parse;
+	mixin(ParseProtoSchema(s,import(s)).toD());
 }
 
 /*******************************************************************************
  * Create D structure strings from proto data
  *
- * Creates the code for all structs given a valid proto file/data string
+ * Creates all required structs given a valid proto definition as a string
  */
-template ProtocolBufferString(string s)
+template ProtocolBufferFromString(string s)
 {
-	import std.string : endsWith;
+	import dproto.buffers;
+	import dproto.exception;
+	import dproto.serialize;
 	import dproto.parse;
-
-	static if(s.endsWith(".proto"))
-		enum ProtocolBufferString = ParseProtoSchema(s,import(s)).toD();
-	else
-		enum ProtocolBufferString = ParseProtoSchema("<none>",s).toD();
+	mixin(ParseProtoSchema("<none>",s).toD());
 }
