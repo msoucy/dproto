@@ -10,6 +10,7 @@ module dproto.serialize;
 import dproto.exception;
 
 import std.algorithm;
+import std.array;
 import std.bitmanip;
 import std.conv;
 import std.exception;
@@ -67,6 +68,33 @@ unittest {
 	assert(is(BuffType!"string" == string) == true);
 	assert(is(BuffType!"bytes" == ubyte[]) == true);
 	assert(is(BuffType!"sfixed64" == int) == false);
+}
+
+/*******************************************************************************
+ * Removes bytes from the range as if it were read in
+ *
+ * Params:
+ *  	header = The data header
+ *  	data   = The data to read from
+ */
+void defaultDecode(ulong header, ubyte[] data)
+{
+	switch(header.wireType) {
+		case 0:
+			data.readProto!"int32"();
+			break;
+		case 1:
+			data.readProto!"fixed64"();
+			break;
+		case 2:
+			data.readProto!"bytes"();
+			break;
+		case 5:
+			data.readProto!"fixed32"();
+			break;
+		default:
+			break;
+	}
 }
 
 /*******************************************************************************

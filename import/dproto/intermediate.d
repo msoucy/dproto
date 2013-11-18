@@ -63,6 +63,8 @@ struct MessageType {
 				%s
 				default: {
 					/// @todo: Safely ignore unrecognized messages
+					defaultDecode(msgdata, data);
+					break;
 				}
 			}
 		}
