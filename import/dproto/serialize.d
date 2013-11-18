@@ -14,6 +14,7 @@ import std.bitmanip;
 import std.conv;
 import std.exception;
 import std.range;
+import std.system : Endian;
 
 /*******************************************************************************
  * Returns whether the given string is a protocol buffer primitive
