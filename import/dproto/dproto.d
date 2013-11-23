@@ -127,23 +127,19 @@ unittest
     }"));
 }
 
-version(includeFailingUnittests)
+unittest
 {
-    unittest
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
     {
-        assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test
+        optional string verySimple = 1;
+        message NestedTest
         {
             optional string verySimple = 1;
-            message NestedTest
-            {
-                optional verySimple = 1;
-            }
+        }
 
-            repeated NestedTest value = 2;
-        }"));
-        assert(false, "Doesn't work at the moment");
-    }
+        repeated NestedTest value = 2;
+    }"));
 }
 
 unittest
