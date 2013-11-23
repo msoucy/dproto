@@ -62,22 +62,26 @@ unittest
             } 
         }"));
 }
-/* UnitTest Fails
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
-        { 
-            optional string verySimple = 1; 
-            enum TestEnum 
-            { 
-                ONE = 1; 
-                UNO = 1; 
-                TOW = 2; 
-            }
 
-            optional TestEnum testValue = 2;
-        }"));
-}*/
+version(includeFailingUnittests)
+{
+    unittest
+    {
+        assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+            { 
+                optional string verySimple = 1; 
+                enum TestEnum 
+                { 
+                    ONE = 1; 
+                    UNO = 1; 
+                    TOW = 2; 
+                }
+
+                optional TestEnum testValue = 2;
+            }"));
+        assert(false, "Doesn't work at the moment");
+    }
+}
 
 unittest
 {
@@ -95,51 +99,62 @@ unittest
         }"));
 }
 
-/* UnitTest fails
-unittest
+version(includeFailingUnittests)
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
+    unittest
     {
-        optional string verySimple = 1;
-        message NestedTest
+        assert(__traits(compiles, ProtocolBufferFromString!"
+        message Test
         {
             optional string verySimple = 1;
-        }
+            message NestedTest
+            {
+                optional string verySimple = 1;
+            }
 
-        optional NestedTest value = 2;
-    }"));
+            optional NestedTest value = 2;
+        }"));
+        assert(false, "Doesn't work at the moment");
+    }
 }
 
-unittest
+version(includeFailingUnittests)
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
+    unittest
     {
-        optional string verySimple = 1;
-        message NestedTest
+        assert(__traits(compiles, ProtocolBufferFromString!"
+        message Test
         {
-            optional string verySimple2 = 1;
-        }
+            optional string verySimple = 1;
+            message NestedTest
+            {
+                optional string verySimple2 = 1;
+            }
 
-        optional NestedTest value = 2;
-    }"));
+            optional NestedTest value = 2;
+        }"));
+        assert(false, "Doesn't work at the moment");
+    }
 }
 
-unittest
+version(includeFailingUnittests)
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
+    unittest
     {
-        optional string verySimple = 1;
-        message NestedTest
+        assert(__traits(compiles, ProtocolBufferFromString!"
+        message Test
         {
-            optional verySimple = 1;
-        }
+            optional string verySimple = 1;
+            message NestedTest
+            {
+                optional verySimple = 1;
+            }
 
-        repeated NestedTest value = 2;
-    }"));
-}*/
+            repeated NestedTest value = 2;
+        }"));
+        assert(false, "Doesn't work at the moment");
+    }
+}
 
 unittest
 {
@@ -156,22 +171,25 @@ unittest
         required NestedTest value = 2;
     }"));
 }
-/* Unit Test fails
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        required int32 id = 3;
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            required string verySimple = 1;
-        }
 
-        optional NestedTest value = 2;
-    }"));
-}*/
+version(includeFailingUnittests)
+{
+    unittest
+    {
+        assert(__traits(compiles, ProtocolBufferFromString!"
+        message Test
+        {
+            required int32 id = 3;
+            optional string verySimple = 1;
+            message NestedTest
+            {
+                required string verySimple = 1;
+            }
+
+            optional NestedTest value = 2;
+        }"));
+    }
+}
 
 unittest
 {
@@ -251,215 +269,225 @@ message Person {
     t.email.clean();
     assert(t.email == "");
 }
-/*
-unittest
+
+version(includeFailingUnittests)
 {
-    mixin ProtocolBufferFromString!"
-enum PhoneType {
-  MOBILE = 0;
-  HOME = 0;
-  WORK = 2;
-}
+    unittest
+    {
+        mixin ProtocolBufferFromString!"
+    enum PhoneType {
+      MOBILE = 0;
+      HOME = 0;
+      WORK = 2;
+    }
 
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
+    message Person {
+      required string name = 1;
+      required int32 id = 2;
+      optional string email = 3;
 
-  message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = PhoneType.HOME];
-  }
+      message PhoneNumber {
+        required string number = 1;
+        optional PhoneType type = 2 [default = PhoneType.HOME];
+      }
 
-  repeated PhoneNumber phone = 4;
-}
+      repeated PhoneNumber phone = 4;
+    }
 
-message AddressBook {
-  repeated Person person = 1;
-}
-    ";
+    message AddressBook {
+      repeated Person person = 1;
+    }
+        ";
 
-    Person t;
-    assert(t.name == "");
-    assert(t.id == 0);
-    assert(t.phone.length == 0);
+        Person t;
+        assert(t.name == "");
+        assert(t.id == 0);
+        assert(t.phone.length == 0);
 
-    t.name = "Max Musterman";
-    assert(t.name == "Max Musterman");
+        t.name = "Max Musterman";
+        assert(t.name == "Max Musterman");
 
-    t.id = 3;
-    assert(t.id == 3);
+        t.id = 3;
+        assert(t.id == 3);
 
-    t.email = "Max.Musterman@example.com";
-    assert(t.email == "Max.Musterman@example.com");
-    assert(t.email.exists());
+        t.email = "Max.Musterman@example.com";
+        assert(t.email == "Max.Musterman@example.com");
+        assert(t.email.exists());
 
-    Person.PhoneNumber pn1;
-    pn1.number = "0123456789";
-    assert(pn1.number == "0123456789");
-    assert(pn1.type == PhoneType.HOME);
-    assert(pn1.type == PhoneType.MOBILE);
+        Person.PhoneNumber pn1;
+        pn1.number = "0123456789";
+        assert(pn1.number == "0123456789");
+        assert(pn1.type == PhoneType.HOME);
+        assert(pn1.type == PhoneType.MOBILE);
 
-    pn1.type = PhoneType.WORK;
-    assert(pn1.type == PhoneType.WORK);
-    assert(pn1.type == 2);
-    assert(pn1.type.exists());
+        pn1.type = PhoneType.WORK;
+        assert(pn1.type == PhoneType.WORK);
+        assert(pn1.type == 2);
+        assert(pn1.type.exists());
 
-    t.phone ~= pn1;
-    assert(t.phone[0] == pn1);
-    assert(t.phone.length == 1);
+        t.phone ~= pn1;
+        assert(t.phone[0] == pn1);
+        assert(t.phone.length == 1);
+            
+        pn1.type.clean();
+        assert(pn1.type == PhoneType.HOME);
+        assert(pn1.type == PhoneType.MOBILE);
+
+        t.phone.clean();
+        assert(t.phone.length == 0);
         
-    pn1.type.clean();
-    assert(pn1.type == PhoneType.HOME);
+        t.email.clean();
+        assert(t.email == "");
 
-    t.phone.clean();
-    assert(t.phone.length == 0);
-    
-    t.email.clean();
-    assert(t.email == "");
-
-    AddressBook addressbook;
-    assert(addressbook.person.length == 0);
-    addressbook.person ~= t;
-    addressbook.person ~= t;
-    assert(addressbook.person[0] == t);
-    assert(addressbook.person[0] == addressbook.person[1]);
-    assert(addressbook.person.length == 2);
+        AddressBook addressbook;
+        assert(addressbook.person.length == 0);
+        addressbook.person ~= t;
+        addressbook.person ~= t;
+        assert(addressbook.person[0] == t);
+        assert(addressbook.person[0] == addressbook.person[1]);
+        assert(addressbook.person.length == 2);
+    }
 }
 
-unittest
+version(includeFailingUnittests)
 {
-    mixin ProtocolBufferFromString!"
-enum PhoneType {
-  MOBILE = 0;
-  HOME = 0;
-  WORK = 2;
-}
+    unittest
+    {
+        mixin ProtocolBufferFromString!"
+    enum PhoneType {
+      MOBILE = 0;
+      HOME = 0;
+      WORK = 2;
+    }
 
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
+    message Person {
+      required string name = 1;
+      required int32 id = 2;
+      optional string email = 3;
 
-  message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = PhoneType.HOME];
-  }
+      message PhoneNumber {
+        required string number = 1;
+        optional PhoneType type = 2 [default = PhoneType.HOME];
+      }
 
-  repeated PhoneNumber phone = 4;
-}
+      repeated PhoneNumber phone = 4;
+    }
 
-message AddressBook {
-  repeated Person person = 1;
-}
-    ";
-    
-    Person t;
-    t.name = "Max Musterman";
-    t.id = 3;
-    t.email = "test@example.com";
-
-    Person.PhoneNumber pn1;
-    pn1.number = "0123456789";
-    pn1.type = PhoneType.WORK;
-    
-    Person.PhoneNumber pn2;
-    pn2.number = "0123456789";
-
-    t.phone = [pn1, pn2];
-    AddressBook addressbook;
-    addressbook.person ~= t;
-    addressbook.person ~= t;
-
-    ubyte[] serializedObject = addressbook.serialize();
-    
-    AddressBook addressbook2 = AddressBook(serializedObject);
-    assert(addressbook2.person.length == 2);
-    assert(addressbook2.person[0] == addressbook.person[1]);
-    Person t2 = addressbook2.person[0];
-    assert(t2.name == "Max Musterman");
-    assert(t2.id == 3);
-    assert(t2.email == "test@example.com");
-    assert(t2.email.exists());
-    assert(t2.phone[0].number == "0123456789");
-    assert(t2.phone[0].type == PhoneType.WORK);
-    assert(t2.phone[1].number == "0123456789");
-    assert(t2.phone[1].type == PhoneType.HOME);
-    assert(t2.phone[1].type == PhoneType.MOBILE);
-    assert(t2.phone.length == 2);
-}
-
-unittest
-{
-    mixin ProtocolBufferFromString!"
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
-
-  enum PhoneType {
-    MOBILE = 0;
-    HOME = 0;
-    WORK = 2;
-  }
-
-  message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = HOME];
-  }
-
-  repeated PhoneNumber phone = 4;
-}
-
-message AddressBook {
-  repeated Person person = 1;
-}
-    ";
-
-    Person t;
-    assert(t.name == "");
-    assert(t.id == 0);
-    assert(t.phone.length == 0);
-
-    t.name = "Max Musterman";
-    assert(t.name == "Max Musterman");
-
-    t.id = 3;
-    assert(t.id == 3);
-
-    t.email = "Max.Musterman@example.com";
-    assert(t.email == "Max.Musterman@example.com");
-    assert(t.email.exists());
-
-    Person.PhoneNumber pn1;
-    pn1.number = "0123456789";
-    assert(pn1.number == "0123456789");
-    assert(pn1.type == PhoneType.HOME);
-    assert(pn1.type == PhoneType.MOBILE);
-
-    pn1.type = PhoneType.WORK;
-    assert(pn1.type == PhoneType.WORK);
-    assert(pn1.type == 2);
-    assert(pn1.type.exists());
-
-    t.phone ~= pn1;
-    assert(t.phone[0] == pn1);
-    assert(t.phone.length == 1);
+    message AddressBook {
+      repeated Person person = 1;
+    }
+        ";
         
-    pn1.type.clean();
-    assert(pn1.type == PhoneType.HOME);
+        Person t;
+        t.name = "Max Musterman";
+        t.id = 3;
+        t.email = "test@example.com";
 
-    t.phone.clean();
-    assert(t.phone.length == 0);
-    
-    t.email.clean();
-    assert(t.email == "");
+        Person.PhoneNumber pn1;
+        pn1.number = "0123456789";
+        pn1.type = PhoneType.WORK;
+        
+        Person.PhoneNumber pn2;
+        pn2.number = "0123456789";
 
-    AddressBook addressbook;
-    assert(addressbook.person.length == 0);
-    addressbook.person ~= t;
-    addressbook.person ~= t;
-    assert(addressbook.person[0] == t);
-    assert(addressbook.person[0] == addressbook.person[1]);
-    assert(addressbook.person.length == 2);
-}*/
+        t.phone = [pn1, pn2];
+        AddressBook addressbook;
+        addressbook.person ~= t;
+        addressbook.person ~= t;
+
+        ubyte[] serializedObject = addressbook.serialize();
+        
+        AddressBook addressbook2 = AddressBook(serializedObject);
+        assert(addressbook2.person.length == 2);
+        assert(addressbook2.person[0] == addressbook.person[1]);
+        Person t2 = addressbook2.person[0];
+        assert(t2.name == "Max Musterman");
+        assert(t2.id == 3);
+        assert(t2.email == "test@example.com");
+        assert(t2.email.exists());
+        assert(t2.phone[0].number == "0123456789");
+        assert(t2.phone[0].type == PhoneType.WORK);
+        assert(t2.phone[1].number == "0123456789");
+        assert(t2.phone[1].type == PhoneType.HOME);
+        assert(t2.phone[1].type == PhoneType.MOBILE);
+        assert(t2.phone.length == 2);
+    }
+}
+
+version(includeFailingUnittests)
+{
+    unittest
+    {
+        mixin ProtocolBufferFromString!"
+    message Person {
+      required string name = 1;
+      required int32 id = 2;
+      optional string email = 3;
+
+      enum PhoneType {
+        MOBILE = 0;
+        HOME = 0;
+        WORK = 2;
+      }
+
+      message PhoneNumber {
+        required string number = 1;
+        optional PhoneType type = 2 [default = HOME];
+      }
+
+      repeated PhoneNumber phone = 4;
+    }
+
+    message AddressBook {
+      repeated Person person = 1;
+    }
+        ";
+
+        Person t;
+        assert(t.name == "");
+        assert(t.id == 0);
+        assert(t.phone.length == 0);
+
+        t.name = "Max Musterman";
+        assert(t.name == "Max Musterman");
+
+        t.id = 3;
+        assert(t.id == 3);
+
+        t.email = "Max.Musterman@example.com";
+        assert(t.email == "Max.Musterman@example.com");
+        assert(t.email.exists());
+
+        Person.PhoneNumber pn1;
+        pn1.number = "0123456789";
+        assert(pn1.number == "0123456789");
+        assert(pn1.type == PhoneType.HOME);
+        assert(pn1.type == PhoneType.MOBILE);
+
+        pn1.type = PhoneType.WORK;
+        assert(pn1.type == PhoneType.WORK);
+        assert(pn1.type == 2);
+        assert(pn1.type.exists());
+
+        t.phone ~= pn1;
+        assert(t.phone[0] == pn1);
+        assert(t.phone.length == 1);
+            
+        pn1.type.clean();
+        assert(pn1.type == PhoneType.HOME);
+
+        t.phone.clean();
+        assert(t.phone.length == 0);
+        
+        t.email.clean();
+        assert(t.email == "");
+
+        AddressBook addressbook;
+        assert(addressbook.person.length == 0);
+        addressbook.person ~= t;
+        addressbook.person ~= t;
+        assert(addressbook.person[0] == t);
+        assert(addressbook.person[0] == addressbook.person[1]);
+        assert(addressbook.person.length == 2);
+    }
+}
