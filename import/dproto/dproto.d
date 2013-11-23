@@ -43,6 +43,217 @@ template ProtocolBufferFromString(string s)
 
 unittest
 {
+    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+        { 
+            optional string verySimple = 1; 
+        }"));
+}
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+        { 
+            optional string verySimple = 1; 
+            enum TestEnum 
+            { 
+                ONE = 1; 
+                UNO = 1; 
+                TOW = 2; 
+            } 
+        }"));
+}
+/* UnitTest Fails
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+        { 
+            optional string verySimple = 1; 
+            enum TestEnum 
+            { 
+                ONE = 1; 
+                UNO = 1; 
+                TOW = 2; 
+            }
+
+            optional TestEnum testValue = 2;
+        }"));
+}*/
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+        { 
+            optional string verySimple = 1; 
+            enum TestEnum 
+            { 
+                ONE = 1; 
+                UNO = 1; 
+                TOW = 2; 
+            }
+
+            optional string testValue = 2;
+        }"));
+}
+
+/* UnitTest fails
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            optional string verySimple = 1;
+        }
+
+        optional NestedTest value = 2;
+    }"));
+}
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            optional string verySimple2 = 1;
+        }
+
+        optional NestedTest value = 2;
+    }"));
+}
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            optional verySimple = 1;
+        }
+
+        repeated NestedTest value = 2;
+    }"));
+}*/
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        required int32 id = 3;
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            required string verySimple = 1;
+        }
+
+        required NestedTest value = 2;
+    }"));
+}
+/* Unit Test fails
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        required int32 id = 3;
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            required string verySimple = 1;
+        }
+
+        optional NestedTest value = 2;
+    }"));
+}*/
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        required int32 id = 3;
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            required string verySimple = 1;
+        }
+
+        repeated NestedTest value = 2;
+    }"));
+}
+
+unittest
+{
+    mixin ProtocolBufferFromString!"
+enum PhoneType {
+  MOBILE = 0;
+  HOME = 0;
+  WORK = 2;
+}
+
+message Person {
+  required string name = 1;
+  required int32 id = 2;
+  optional string email = 3;
+
+  message PhoneNumber {
+    required string number = 1;
+    optional PhoneType type = 2 [default = PhoneType.HOME];
+  }
+
+  repeated PhoneNumber phone = 4;
+}
+    ";
+
+    Person t;
+    assert(t.name == "");
+    assert(t.id == 0);
+    assert(t.phone.length == 0);
+
+    t.name = "Max Musterman";
+    assert(t.name == "Max Musterman");
+
+    t.id = 3;
+    assert(t.id == 3);
+
+    t.email = "Max.Musterman@example.com";
+    assert(t.email == "Max.Musterman@example.com");
+    assert(t.email.exists());
+
+    Person.PhoneNumber pn1;
+    pn1.number = "0123456789";
+    assert(pn1.number == "0123456789");
+    assert(pn1.type == PhoneType.HOME);
+    assert(pn1.type == PhoneType.MOBILE);
+
+    pn1.type = PhoneType.WORK;
+    assert(pn1.type == PhoneType.WORK);
+    assert(pn1.type == 2);
+    assert(pn1.type.exists());
+
+    t.phone ~= pn1;
+    assert(t.phone[0] == pn1);
+    assert(t.phone.length == 1);
+        
+    pn1.type.clean();
+    assert(pn1.type == PhoneType.HOME);
+
+    t.phone.clean();
+    assert(t.phone.length == 0);
+    
+    t.email.clean();
+    assert(t.email == "");
+}
+/*
+unittest
+{
     mixin ProtocolBufferFromString!"
 enum PhoneType {
   MOBILE = 0;
@@ -251,4 +462,4 @@ message AddressBook {
     assert(addressbook.person[0] == t);
     assert(addressbook.person[0] == addressbook.person[1]);
     assert(addressbook.person.length == 2);
-}
+}*/
