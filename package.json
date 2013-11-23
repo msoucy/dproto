@@ -11,7 +11,7 @@
 	"importPaths": [
 		"import"
 	],
-    "sourcePaths": {
-        "import"
-    ]
+        "sourcePaths": [
+                "import"
+        ]
 }
