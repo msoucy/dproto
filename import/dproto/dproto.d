@@ -43,7 +43,7 @@ template ProtocolBufferFromString(string s)
 
 unittest
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+    assert(__traits(compiles,ProtocolBufferFromString!"message Test 
         { 
             optional string verySimple = 1; 
         }"));
@@ -51,7 +51,8 @@ unittest
 
 unittest
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+    assert(__traits(compiles, ProtocolBufferFromString!"
+        message Test 
         { 
             optional string verySimple = 1; 
             enum TestEnum 
@@ -63,24 +64,21 @@ unittest
         }"));
 }
 
-version(includeFailingUnittests)
+unittest
 {
-    unittest
-    {
-        assert(__traits(compiles, ProtocolBufferFromString!"message Test 
+    mixin ProtocolBufferFromString!"
+        message Test 
+        { 
+            required int32 id = 1; 
+            optional string verySimple = 2; 
+            enum TestEnum 
             { 
-                optional string verySimple = 1; 
-                enum TestEnum 
-                { 
-                    ONE = 1; 
-                    UNO = 1; 
-                    TOW = 2; 
-                }
-
-                optional TestEnum testValue = 2;
-            }"));
-        assert(false, "Doesn't work at the moment");
-    }
+                ONE = 1; 
+                UNO = 1; 
+                TOW = 2; 
+            }
+                optional TestEnum testValue = 3;
+        }";
 }
 
 unittest
@@ -99,42 +97,34 @@ unittest
         }"));
 }
 
-version(includeFailingUnittests)
+unittest
 {
-    unittest
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
     {
-        assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test
+        optional string verySimple = 1;
+        message NestedTest
         {
             optional string verySimple = 1;
-            message NestedTest
-            {
-                optional string verySimple = 1;
-            }
+        }
 
-            optional NestedTest value = 2;
-        }"));
-        assert(false, "Doesn't work at the moment");
-    }
+        optional NestedTest value = 2;
+    }"));
 }
 
-version(includeFailingUnittests)
+unittest
 {
-    unittest
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
     {
-        assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test
+        optional string verySimple = 1;
+        message NestedTest
         {
-            optional string verySimple = 1;
-            message NestedTest
-            {
-                optional string verySimple2 = 1;
-            }
+            optional string verySimple2 = 1;
+        }
 
-            optional NestedTest value = 2;
-        }"));
-        assert(false, "Doesn't work at the moment");
-    }
+        optional NestedTest value = 2;
+    }"));
 }
 
 version(includeFailingUnittests)
@@ -172,23 +162,36 @@ unittest
     }"));
 }
 
-version(includeFailingUnittests)
+unittest
 {
-    unittest
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
     {
-        assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test
+        required int32 id = 3;
+        optional string verySimple = 1;
+        message NestedTest
         {
-            required int32 id = 3;
-            optional string verySimple = 1;
-            message NestedTest
-            {
-                required string verySimple = 1;
-            }
+            required string verySimple = 1;
+        }
 
-            optional NestedTest value = 2;
-        }"));
-    }
+        repeated NestedTest value = 2;
+    }"));
+}
+
+unittest
+{
+    assert(__traits(compiles, ProtocolBufferFromString!"
+    message Test
+    {
+        required int32 id = 3;
+        optional string verySimple = 1;
+        message NestedTest
+        {
+            required string verySimple = 1;
+        }
+
+        optional NestedTest value = 2;
+    }"));
 }
 
 unittest
@@ -297,6 +300,7 @@ version(includeFailingUnittests)
     message AddressBook {
       repeated Person person = 1;
     }
+
         ";
 
         Person t;
