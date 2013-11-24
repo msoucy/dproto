@@ -9,7 +9,7 @@
 	"dependencies": {
         "dproto": "~master"
 	},
-    "dflags": [
-        "-J proto"
-    ]
+    	"stringImportPaths": [
+    		"proto"
+    	]
 }
