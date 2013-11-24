@@ -222,7 +222,7 @@ message Person {
 
   message PhoneNumber {
     required string number = 1;
-    optional PhoneType type = 2 [default = PhoneType.HOME];
+    optional PhoneType type = 2 [default = HOME];
   }
 
   repeated PhoneNumber phone = 4;
@@ -289,7 +289,7 @@ version(GNU)
 
               message PhoneNumber {
                 required string number = 1;
-                optional PhoneType type = 2 [default = PhoneType.HOME];
+                optional PhoneType type = 2 [default = HOME];
               }
 
               repeated PhoneNumber phone = 4;
@@ -354,7 +354,7 @@ version(GNU)
 
       message PhoneNumber {
         required string number = 1;
-        optional PhoneType type = 2 [default = PhoneType.HOME];
+        optional PhoneType type = 2 [default = HOME];
       }
 
       repeated PhoneNumber phone = 4;
@@ -405,10 +405,7 @@ version(GNU)
             assert(addressbook2.person[0] == addressbook.person[1]);
         }
    }
-}
 
-version(includeFailingUnittests)
-{
     unittest
     {
         mixin ProtocolBufferFromString!"
@@ -454,11 +451,11 @@ version(includeFailingUnittests)
         Person.PhoneNumber pn1;
         pn1.number = "0123456789";
         assert(pn1.number == "0123456789");
-        assert(pn1.type == PhoneType.HOME);
-        assert(pn1.type == PhoneType.MOBILE);
+        assert(pn1.type == Person.PhoneType.HOME);
+        assert(pn1.type == Person.PhoneType.MOBILE);
 
-        pn1.type = PhoneType.WORK;
-        assert(pn1.type == PhoneType.WORK);
+        pn1.type = Person.PhoneType.WORK;
+        assert(pn1.type == Person.PhoneType.WORK);
         assert(pn1.type == 2);
         assert(pn1.type.exists());
 
@@ -467,7 +464,7 @@ version(includeFailingUnittests)
         assert(t.phone.length == 1);
             
         pn1.type.clean();
-        assert(pn1.type == PhoneType.HOME);
+        assert(pn1.type == Person.PhoneType.HOME);
 
         t.phone.clean();
         assert(t.phone.length == 0);
