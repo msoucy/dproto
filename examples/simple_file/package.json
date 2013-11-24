@@ -1,10 +1,10 @@
 {
-	"name": "dprototest",
-	"description": "An example project skeleton",
-	"homepage": "http://example.org",
-	"copyright": "Copyright © 2000, Your Name",
+	"name": "simple_file",
+	"description": "An simple example with proto file import.",
+	"homepage": "https://github.com/chickeaterbanana/dproto",
+	"copyright": "Copyright © 2013, Bjarne Leif Bruhn",
 	"authors": [
-		"Your Name"
+		"Bjarne Leif Bruhn"
 	],
 	"dependencies": {
         "dproto": "~master"
