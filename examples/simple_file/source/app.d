@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * An simple example for dproto
+ *
+ * Authors: Bjarne Leif Bruhn
+ * Date: Nov 24, 2013
+ * Version: 1.0.0
+ */
+
 import std.stdio;
 import dproto.dproto;
 
