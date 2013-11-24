@@ -45,7 +45,58 @@ struct MessageType {
 	}
 
 	string toD() {
-		return `struct %s {
+        string enumTypeD;
+        string messageTypesD;
+        string fieldsD;
+        string fieldsSerializeD;
+        string fieldsIssetValueD;
+        string fieldsCheckValueD;
+        string fieldsCaseD;
+        version(GNU)
+        {
+            foreach(a; enumTypes)
+            {
+                enumTypeD ~= a.toD();
+            }
+
+            foreach(a; messageTypes)
+            {
+                messageTypesD ~= a.toD();
+            }
+
+            string[] fieldsArrD;
+            string[] fieldsSerializeArrD;
+            string[] fieldsIssetValueArrD;
+            string[] fieldsCheckValueArrD;
+            string[] fieldsCaseArrD;
+            foreach(a; fields)
+            {
+                fieldsArrD ~= a.getDeclaration();
+                fieldsSerializeArrD ~= a.name~".serialize()";
+                if (a.requirement == Field.Requirement.REQUIRED)
+                {
+                    fieldsIssetValueArrD ~= "bool "~a.name~"_isset = false;";
+                    fieldsCheckValueArrD ~= a.getCheck();
+                }
+                fieldsCaseArrD ~= a.getCase();
+            }
+            fieldsD = fieldsArrD.join("\n\t");
+            fieldsSerializeD = fieldsSerializeArrD.join(" ~ ");
+            fieldsIssetValueD = fieldsIssetValueArrD.join("\n\t\t");
+            fieldsCheckValueD = fieldsCheckValueArrD.join("\n\t\t");
+            fieldsCaseD = fieldsCaseArrD.join("\n\t\t\t\t");
+        } 
+        else 
+        {
+            enumTypeD = enumTypes.map!(a=>a.toD())().join();
+            messageTypesD = messageTypes.map!(a=>a.toD())().join();
+            fieldsD = fields.map!(a=>a.getDeclaration())().join("\n\t");
+            fieldsSerializeD = fields.map!(a=>a.name~".serialize()")().join(" ~ ");
+            fieldsIssetValueD = fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join("\n\t\t");
+            fieldsCheckValueD = fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join("\n\t\t");
+            fieldsCaseD = fields.map!(a=>a.getCase())().join("\n\t\t\t\t");
+        }
+        return `struct %s {
 	%s
 	%s
     %s
@@ -78,14 +129,14 @@ struct MessageType {
 		deserialize(data);
 	}
 }`.format(
-			name,
-            enumTypes.map!(a=>a.toD())().join(),
-			messageTypes.map!(a=>a.toD())().join(),
-			fields.map!(a=>a.getDeclaration())().join("\n\t"),
-			fields.map!(a=>a.name~".serialize()")().join(" ~ "),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join("\n\t\t"),
-			fields.map!(a=>a.getCase())().join("\n\t\t\t\t"),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join("\n\t\t")
+			name,            
+            enumTypeD,
+            messageTypesD,
+            fieldsD,
+            fieldsSerializeD,
+            fieldsIssetValueD,
+            fieldsCaseD,
+            fieldsCheckValueD
 		);
 	}
 }
