@@ -12,7 +12,7 @@ Inspiration and a good portion of the parser is adapted from square/protoparser
 
 further Infos: https://developers.google.com/protocol-buffers/docs/overview
 
-simple example
+## Simple Example
 
     import std.stdio;
     import dproto.dproto;
@@ -54,7 +54,7 @@ simple example
         return 0;
     }
 
-more complex example
+## More Complex Example
 
     import dproto.dproto;
     
