@@ -48,8 +48,9 @@ struct MessageType {
         string enumTypeD;
         string messageTypesD;
         string fieldsD;
-        string fieldsSerializeD;
         string fieldsIssetValueD;
+        string fieldsSerializeD;
+        string fieldsSerializeJsonD;
         string fieldsCheckValueD;
         string fieldsCaseD;
         version(GNU)
@@ -65,14 +66,16 @@ struct MessageType {
             }
 
             string[] fieldsArrD;
-            string[] fieldsSerializeArrD;
             string[] fieldsIssetValueArrD;
+            string[] fieldsSerializeArrD;
+            string[] fieldsSerializeJsonArrD;
             string[] fieldsCheckValueArrD;
             string[] fieldsCaseArrD;
             foreach(a; fields)
             {
                 fieldsArrD ~= a.getDeclaration();
                 fieldsSerializeArrD ~= a.name~".serialize()";
+                fieldsSerializeJsonArrD ~= "ret.object[\""~a.name~"\"] = "~a.name~".serializeToJson();";
                 if (a.requirement == Field.Requirement.REQUIRED)
                 {
                     fieldsIssetValueArrD ~= "bool "~a.name~"_isset = false;";
@@ -81,6 +84,7 @@ struct MessageType {
                 fieldsCaseArrD ~= a.getCase();
             }
             fieldsD = fieldsArrD.join("\n\t");
+            fieldsSerializeJsonD = fieldsSerializeJsonArrD.join("\n\t\t");
             fieldsSerializeD = fieldsSerializeArrD.join(" ~ ");
             fieldsIssetValueD = fieldsIssetValueArrD.join("\n\t\t");
             fieldsCheckValueD = fieldsCheckValueArrD.join("\n\t\t");
@@ -95,6 +99,7 @@ struct MessageType {
             fieldsIssetValueD = fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join("\n\t\t");
             fieldsCheckValueD = fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join("\n\t\t");
             fieldsCaseD = fields.map!(a=>a.getCase())().join("\n\t\t\t\t");
+            fieldsSerializeJsonD = fields.map!(a=> "ret.object[\""~a.name~"\"] = "~a.name~".serializeToJson();")().join("\n\t\t");
         }
         return `struct %s {
 	%s
@@ -104,6 +109,13 @@ struct MessageType {
 	ubyte[] serialize() {
 		return %s;
 	}
+
+    JSONValue serializeToJson() {
+        JSONValue ret;
+        ret.type = JSON_TYPE.OBJECT;
+        %s
+        return ret;
+    }
 
 	void deserialize(ubyte[] data) {
 		// Required flags
@@ -134,6 +146,7 @@ struct MessageType {
             messageTypesD,
             fieldsD,
             fieldsSerializeD,
+            fieldsSerializeJsonD,
             fieldsIssetValueD,
             fieldsCaseD,
             fieldsCheckValueD
@@ -166,7 +179,8 @@ struct EnumType {
 		}
 		string ret = `enum %s {%s}
 %s readProto(string T)(ref ubyte[] src) if(T == "%s") { return src.readVarint().to!(%s)(); }
-ubyte[] serialize(%s src) { return src.toVarint().dup; }`.format(name, members, name, name, name, name);
+JSONValue serializeToJson(%s src) { JSONValue ret; ret.type = JSON_TYPE.INTEGER; ret.integer = src; return ret; }
+ubyte[] serialize(%s src) { return src.toVarint().dup; }`.format(name, members, name, name, name, name, name);
 		return ret;
 	}
 }

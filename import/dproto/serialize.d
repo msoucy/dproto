@@ -16,6 +16,8 @@ import std.conv;
 import std.exception;
 import std.range;
 import std.system : Endian;
+import std.json;
+import std.base64;
 
 /*******************************************************************************
  * Returns whether the given string is a protocol buffer primitive
@@ -291,6 +293,73 @@ BuffType!T readProto(string T)(ref ubyte[] src)
 	auto s = cast(BuffType!T)(src.take(length));
 	src=src[length..$];
 	return s;
+}
+
+/*******************************************************************************
+ * convert value to a JSONValue
+ *
+ * Params:
+ *      src = The raw data
+ * Returns: The JSONValue
+ */
+JSONValue writeJSON(string T)(BuffType!T src)
+    if(T == "fixed32" || T == "fixed64" || T == "int32" || T == "int64" || T == "uint32" || T == "uint64")
+{
+    JSONValue ret;
+    ret.type = JSON_TYPE.UINTEGER;
+    ret.uinteger = src;
+    return ret;
+}
+
+/// Ditto
+JSONValue writeJSON(string T)(BuffType!T src)
+    if(T == "sint32" || T == "sint64" || T == "sfixed64" || T == "sfixed32")
+{
+    JSONValue ret;
+    ret.type = JSON_TYPE.INTEGER;
+    ret.integer = src;
+    return ret;
+}
+
+/// Ditto
+JSONValue writeJSON(string T)(BuffType!T src)
+    if(T == "double" || T == "float")
+{
+    JSONValue ret;
+    ret.type = JSON_TYPE.FLOAT;
+    ret.floating = src;
+    return ret;
+}
+
+/// Ditto
+JSONValue writeJSON(string T)(BuffType!T src)
+    if (T == "string")
+{
+    JSONValue ret;
+    ret.type = JSON_TYPE.STRING;
+    ret.str = src;
+    return ret;
+}
+
+/// Ditto
+JSONValue writeJSON(string T)(BuffType!T src)
+    if (T == "bytes")
+{
+    JSONValue ret;
+    ret.type = JSON_TYPE.STRING;
+    ret.str = Base64.encode(src);
+    return ret;
+}
+
+JSONValue writeJSON(string T)(BuffType!T src)
+    if (T == "bool")
+{
+    JSONValue ret;
+    if (src)
+        ret.type = JSON_TYPE.TRUE;
+    else
+        ret.type = JSON_TYPE.FALSE;
+    return ret;
 }
 
 /*******************************************************************************

@@ -10,6 +10,7 @@
 module dproto.dproto;
 
 import std.exception : enforce;
+public import std.json;
 
 /*******************************************************************************
  * Create D structures from proto file
