@@ -11,6 +11,7 @@ Inspiration and a good portion of the parser is adapted from square/protoparser
 # Example
 
 Further info: https://developers.google.com/protocol-buffers/docs/overview
+
 Examples can be found in import/dproto/dproto.d and in examples.
 
 ## Simple Example
