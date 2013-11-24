@@ -23,7 +23,7 @@ mixin ProtocolBufferFromString!"
 
       message PhoneNumber {
         required string number = 1;
-        optional PhoneType type = 2 [default = PhoneType.HOME];
+        optional PhoneType type = 2 [default = HOME];
       }
 
       repeated PhoneNumber phone = 4;
