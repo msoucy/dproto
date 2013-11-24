@@ -33,7 +33,7 @@ Examples can be found in import/dproto/dproto.d and in examples.
     
           message PhoneNumber {
             required string number = 1;
-            optional PhoneType type = 2 [default = PhoneType.HOME];
+            optional PhoneType type = 2 [default = HOME];
           }
     
           repeated PhoneNumber phone = 4;
@@ -74,7 +74,7 @@ Examples can be found in import/dproto/dproto.d and in examples.
     
           message PhoneNumber {
             required string number = 1;
-            optional PhoneType type = 2 [default = PhoneType.HOME];
+            optional PhoneType type = 2 [default = HOME];
           }
     
           repeated PhoneNumber phone = 4;
