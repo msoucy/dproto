@@ -10,7 +10,7 @@ Inspiration and a good portion of the parser is adapted from square/protoparser
 ----
 # Example
 
-further Infos: https://developers.google.com/protocol-buffers/docs/overview
+Further info: https://developers.google.com/protocol-buffers/docs/overview
 
 ## Simple Example
 
