@@ -11,6 +11,7 @@ import std.algorithm;
 import std.array;
 import std.conv;
 import std.exception;
+import std.json;
 
 import dproto.serialize;
 import dproto.exception;
@@ -86,6 +87,31 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 	alias opGet this;
+
+    /***************************************************************************
+     * Serialize the buffer
+     *
+     * Returns: The json-encoded data, or an null JSONValue if the object is not set
+     */
+    JSONValue serializeToJson() {
+        if (isset)
+        {
+            static if (IsBuiltinType(BufferType))
+            {
+                return raw.writeJSON!BufferType();
+            }
+            else
+            {
+                return raw.serializeToJson();
+            }
+        }
+        else
+        {
+            JSONValue ret;
+            ret.type = JSON_TYPE.NULL;
+            return ret;
+        }
+    }
 
 	/***************************************************************************
 	 * Serialize the buffer
@@ -168,6 +194,22 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
+    /***************************************************************************
+     * Serialize the buffer
+     *
+     * Returns: The json-encoded data, or an null JSONValue if the object is not set
+     */
+    JSONValue serializeToJson() 
+    {
+        static if(IsBuiltinType(BufferType))
+        {
+            return raw.writeJSON!BufferType();
+        }
+        else
+        {
+            return raw.serializeToJson();
+        }
+    }
 
 	/***************************************************************************
 	 * Serialize the buffer
@@ -262,6 +304,32 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
+    /***************************************************************************
+     * Serialize the buffer
+     *
+     * Returns: The json-encoded data, or an null JSONValue if the object is not set
+     */
+    JSONValue serializeToJson() 
+    {
+        static if (IsBuiltinType(BufferType))
+        {
+            JSONValue ret;
+            ret.type = JSON_TYPE.ARRAY;
+            foreach(value; raw)
+                ret.array ~= value.writeJSON!BufferType();
+            return ret;
+        }
+        else
+        {
+            JSONValue ret;
+            ret.type = JSON_TYPE.ARRAY;
+            foreach(value; raw)
+                ret.array ~= value.serializeToJson();
+            return ret;
+        }
+    }
+
+        
 	/***************************************************************************
 	 * Serialize the buffer
 	 *

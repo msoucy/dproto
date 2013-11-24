@@ -7,5 +7,9 @@
  * Date: Nov 18, 2013
  * Version: 1.1.0
  */
-module dproto;
-public import dproto.dproto;
+ //gdc doesn't know module
+//module dproto;
+version(DigitalMars)
+{
+    public import dproto.dproto;
+}
