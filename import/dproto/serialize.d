@@ -286,7 +286,7 @@ BuffType!T readProto(string T)(ref ubyte[] src)
 BuffType!T readProto(string T)(ref ubyte[] src)
 	if(T == "string" || T == "bytes")
 {
-	auto length = src.readProto!"int64"();
+	auto length = src.readProto!"uint32"();
 	enforce(src.length >= length, new DProtoException("Not enough data in buffer"));
 	auto s = cast(BuffType!T)(src.take(length));
 	src=src[length..$];
