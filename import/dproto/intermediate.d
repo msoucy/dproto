@@ -219,7 +219,11 @@ struct Field {
 		}
 		if(requirement == Requirement.OPTIONAL) {
 			if(auto dV = "default" in options) {
-				ret ~= ", "~(*dV);
+				string dVprefix;
+				if(!IsBuiltinType(type)) {
+					dVprefix = type~".";
+				}
+				ret ~= ", "~(dVprefix)~(*dV);
 			} else if(IsBuiltinType(type)) {
 				ret ~= `, (BuffType!"%s").init`.format(type);
 			} else {
