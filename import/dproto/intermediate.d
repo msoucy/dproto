@@ -48,6 +48,7 @@ struct MessageType {
 		return `struct %s {
 	%s
 	%s
+	%s
 
 	ubyte[] serialize() {
 		return %s;
@@ -78,6 +79,7 @@ struct MessageType {
 	}
 }`.format(
 			name,
+			enumTypes.map!(a=>a.toD())().join(),
 			messageTypes.map!(a=>a.toD())().join(),
 			fields.map!(a=>a.getDeclaration())().join("\n\t"),
 			fields.map!(a=>a.name~".serialize()")().join(" ~ "),
@@ -217,9 +219,15 @@ struct Field {
 		}
 		if(requirement == Requirement.OPTIONAL) {
 			if(auto dV = "default" in options) {
-				ret ~= ", "~(*dV);
-			} else {
+				string dVprefix;
+				if(!IsBuiltinType(type)) {
+					dVprefix = type~".";
+				}
+				ret ~= ", "~(dVprefix)~(*dV);
+			} else if(IsBuiltinType(type)) {
 				ret ~= `, (BuffType!"%s").init`.format(type);
+			} else {
+				ret ~= `, %s.init`.format(type);
 			}
 		} else if(requirement == Requirement.REPEATED) {
 			auto packed = "packed" in options;
