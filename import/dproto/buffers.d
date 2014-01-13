@@ -239,7 +239,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Params:
 	 *  	val = The value to populate with
 	 */
-	this(ValueType[] val ...) {
+	this(inout ValueType[] val ...) inout @safe {
 		raw = val;
 	}
 
@@ -261,6 +261,21 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 	alias opGet this;
+
+	inout(RepeatedBuffer) save() @property inout
+	{
+		 return this;
+	}
+
+	inout(RepeatedBuffer) opSlice(size_t i, size_t j) @property inout
+	{
+		return inout(RepeatedBuffer)(raw[i .. j]);
+	}
+
+	size_t length() @property const
+	{
+		return raw.length;
+	}
 
 	/***************************************************************************
 	 * Serialize the buffer
