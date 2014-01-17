@@ -1,0 +1,12 @@
+{
+	"name": "dproto_simple",
+	"description": "An simple dproto example",
+	"homepage": "https://github.com/chickeaterbanana/dproto",
+	"copyright": "Copyright © 2013, Bjarne Leif Bruhn",
+	"authors": [
+		"Bjarne Leif Bruhn"
+	],
+	"dependencies": {
+        "dproto": "~master"
+	}
+}
