@@ -378,7 +378,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			string result;
 			while (pos < data.length) {
 				char c = data[pos++];
-				if (c == '"') return result;
+				if (c == '"') return '"'~result~'"';
 
 				if (c == '\\') {
 					enforce(pos != data.length, unexpected("unexpected end of file"));
