@@ -43,54 +43,54 @@ template ProtocolBufferFromString(string s)
 
 unittest
 {
-    assert(__traits(compiles,ProtocolBufferFromString!"message Test 
-        { 
-            optional string verySimple = 1; 
+    assert(__traits(compiles,ProtocolBufferFromString!"message Test
+        {
+            optional string verySimple = 1;
         }"));
 }
 
 unittest
 {
     assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test 
-        { 
-            optional string verySimple = 1; 
-            enum TestEnum 
-            { 
-                ONE = 1; 
-                UNO = 1; 
-                TOW = 2; 
-            } 
+        message Test
+        {
+            optional string verySimple = 1;
+            enum TestEnum
+            {
+                ONE = 1;
+                UNO = 1;
+                TOW = 2;
+            }
         }"));
 }
 
 unittest
 {
     mixin ProtocolBufferFromString!"
-        message Test 
-        { 
-            required int32 id = 1; 
-            optional string verySimple = 2; 
-            enum TestEnum 
-            { 
-                ONE = 1; 
-                UNO = 1; 
-                TOW = 2; 
+        message Test
+        {
+            required int32 id = 1;
+            optional string verySimple = 2;
+            enum TestEnum
+            {
+                ONE = 1;
+                UNO = 1;
+                TOW = 2;
             }
-                optional TestEnum testValue = 3;
+            optional TestEnum testValue = 3;
         }";
 }
 
 unittest
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"message Test 
-        { 
-            optional string verySimple = 1; 
-            enum TestEnum 
-            { 
-                ONE = 1; 
-                UNO = 1; 
-                TOW = 2; 
+    assert(__traits(compiles, ProtocolBufferFromString!"message Test
+        {
+            optional string verySimple = 1;
+            enum TestEnum
+            {
+                ONE = 1;
+                UNO = 1;
+                TOW = 2;
             }
 
             optional string testValue = 2;
@@ -258,13 +258,13 @@ message Person {
     t.phone ~= pn1;
     assert(t.phone[0] == pn1);
     assert(t.phone.length == 1);
-        
+
     pn1.type.clean();
     assert(pn1.type == PhoneType.HOME);
 
     t.phone.clean();
     assert(t.phone.length == 0);
-    
+
     t.email.clean();
     assert(t.email == "");
 }
@@ -322,10 +322,10 @@ version(GNU)
         t.test ~= pn1;
         assert(t.test[0] == pn1);
         assert(t.test.length == 1);
-            
+
         t.test.clean();
         assert(t.test.length == 0);
-        
+
         t.email.clean();
         assert(t.email == "");
 
@@ -364,8 +364,8 @@ version(GNU)
       repeated Person person = 1;
     }
         ";
-       
-         Person t;
+
+        Person t;
         t.name = "Max Musterman";
         t.id = 3;
         t.email = "test@example.com";
@@ -373,7 +373,7 @@ version(GNU)
         Person.PhoneNumber pn1;
         pn1.number = "0123456789";
         pn1.type = PhoneType.WORK;
-        
+
         Person.PhoneNumber pn2;
         pn2.number = "0123456789";
 
@@ -383,7 +383,7 @@ version(GNU)
         addressbook.person ~= t;
 
         ubyte[] serializedObject = addressbook.serialize();
-        
+
         AddressBook addressbook2 = AddressBook(serializedObject);
         assert(addressbook2.person.length == 2);
         foreach (t2; addressbook2.person[0])
@@ -462,13 +462,13 @@ version(GNU)
         t.phone ~= pn1;
         assert(t.phone[0] == pn1);
         assert(t.phone.length == 1);
-            
+
         pn1.type.clean();
         assert(pn1.type == Person.PhoneType.HOME);
 
         t.phone.clean();
         assert(t.phone.length == 0);
-        
+
         t.email.clean();
         assert(t.email == "");
 

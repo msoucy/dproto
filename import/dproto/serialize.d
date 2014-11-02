@@ -238,7 +238,7 @@ unittest {
  * Returns: The decoded value
  */
 long fromVarint(ubyte[] src) @property {
-	return 0L.reduce!q{(a<<7)|(b&0x7F)}(src.retro());
+	return 0L.reduce!((a,b) => (a<<7)|(b&0x7F))(src.retro());
 }
 
 unittest {
