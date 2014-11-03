@@ -14,10 +14,19 @@ import dproto.serialize;
 import std.algorithm;
 import std.conv;
 import std.string;
+import std.format;
 
 package:
 
-alias Options = string[string];
+struct Options {
+	string[string] raw;
+	alias raw this;
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		if(!raw.length) return;
+		sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
+	}
+}
 
 struct MessageType {
 	this(string name) {
@@ -29,65 +38,46 @@ struct MessageType {
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 
-	string toProto() @property {
-		string ret;
-		ret ~= "message %s {".format(name);
-		foreach(opt, val;options) {
-			ret ~= "option %s = %s;".format(opt, val);
-		}
-		if(fields) {
-			ret ~= fields.map!(a=>a.toProto())().join();
-		}
-		ret ~= enumTypes.map!(a=>a.toProto())().join("\n");
-		ret ~= messageTypes.map!(a=>a.toProto())().join("\n");
-		ret ~= "}";
-		return ret;
-	}
-
-	string toD() {
-		return `struct %s {
-	%s
-	%s
-	%s
-
-	ubyte[] serialize() {
-		return %s;
-	}
-
-	void deserialize(ubyte[] data) {
-		// Required flags
-		%s
-
-		while(data.length) {
-			auto msgdata = data.readVarint();
-			switch(msgdata.msgNum()) {
-				%s
-				default: {
-					/// @todo: Safely ignore unrecognized messages
-					defaultDecode(msgdata, data);
-					break;
-				}
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		if(fmt.spec == 'p') {
+			sink.formattedWrite("message %s { ", name);
+			foreach(opt, val; options) {
+				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
+		} else {
+			sink.formattedWrite("struct %s { ", name);
 		}
-
-		// Check required flags
-		%s
+		foreach(et; enumTypes) sink.formatValue(et, fmt);
+		foreach(mt; messageTypes) sink.formatValue(mt, fmt);
+		foreach(field; fields) sink.formatValue(field, fmt);
+		if(fmt.spec != 'p') {
+			// Serialize function
+			sink("ubyte[] serialize() { return ");
+			sink.formattedWrite("%-(%s.serialize()%| ~ %)", fields.map!(a=>a.name));
+			sink("; } ");
+			// Deserialize function
+			sink("void deserialize(ubyte[] data) {");
+			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
+				sink.formattedWrite("bool %s_isset = false; ", f.name);
+			}
+			sink("while(data.length) { auto msgdata = data.readVarint(); switch(msgdata.msgNum()) {");
+			foreach(f; fields) { f.getCase(sink); }
+			/// @todo: Safely ignore unrecognized messages
+			sink("default: { defaultDecode(msgdata, data); break; } ");
+			// Close the while and switch
+			sink("} } ");
+			// Check the required flags
+			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
+				f.getCheck(sink);
+			}
+			sink("} this(ubyte[] data) { deserialize(data); }");
+		}
+		sink("} ");
 	}
 
-	this(ubyte[] data) {
-		deserialize(data);
-	}
-}`.format(
-			name,
-			enumTypes.map!(a=>a.toD())().join(),
-			messageTypes.map!(a=>a.toD())().join(),
-			fields.map!(a=>a.getDeclaration())().join("\n\t"),
-			fields.map!(a=>a.name~".serialize()")().join(" ~ "),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>"bool "~a.name~"_isset = false;")().join("\n\t\t"),
-			fields.map!(a=>a.getCase())().join("\n\t\t\t\t"),
-			fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)().map!(a=>a.getCheck())().join("\n\t\t")
-		);
-	}
+	string toProto() @property const { return "%p".format(this); }
+	string toD() @property const { return "%s".format(this); }
 }
 
 struct EnumType {
@@ -98,26 +88,36 @@ struct EnumType {
 	Options options;
 	int[string] values;
 
-	string toProto() @property {
-		string ret;
-		ret ~= "enum %s {".format(name);
-		ret ~= "%(%s%)".format(options);
-		foreach(key, val;values) {
-			ret ~= "%s = %s;".format(key, val);
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		sink.formattedWrite("enum %s {", name);
+		switch(fmt.spec) {
+			case 'p':
+				foreach(opt, val; options) {
+					sink.formattedWrite("option %s = %s; ", opt, val);
+				}
+				foreach(key, val; values) {
+					sink.formattedWrite("%s = %s; ", key, val);
+				}
+				sink("}");
+				break;
+			default:
+				foreach(key, val; values) {
+					sink.formattedWrite("%s = %s, ", key, val);
+				}
+				sink("} ");
+				sink(name);
+				sink(` readProto(string T)(ref ubyte[] src) `);
+				sink.formattedWrite(`if(T == "%s")`, name);
+				sink.formattedWrite(`{ return src.readVarint().to!(%s)(); }`, name);
+				sink.formattedWrite(`ubyte[] serialize(%s src) `, name);
+				sink(`{ return src.toVarint().dup; }`);
+				break;
 		}
-		ret ~= "}";
-		return ret;
 	}
-	string toD() @property {
-		string members;
-		foreach(key, val; values) {
-			members ~= "%s = %s, ".format(key, val);
-		}
-		string ret = `enum %s {%s}
-%s readProto(string T)(ref ubyte[] src) if(T == "%s") { return src.readVarint().to!(%s)(); }
-ubyte[] serialize(%s src) { return src.toVarint().dup; }`.format(name, members, name, name, name, name);
-		return ret;
-	}
+
+	string toProto() @property const { return "%p".format(this); }
+	string toD() @property const { return "%s".format(this); }
 }
 
 struct Option {
@@ -144,38 +144,32 @@ struct ProtoPackage {
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 	Options options;
-	string toProto() @property {
-		string ret;
-		if(packageName) {
-			ret ~= "package %s;".format(packageName);
+
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		if(fmt.spec == 'p') {
+			if(packageName) {
+				sink.formattedWrite("package %s; ", packageName);
+			}
+			foreach(dep; dependencies) {
+				sink.formattedWrite("import %s; ");
+			}
+		} else {
+			foreach(dep;dependencies) {
+				sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, dep);
+			}
 		}
-		foreach(dep;dependencies) {
-			ret ~= `import "%s";`.format(dep);
+		foreach(e; enumTypes) sink.formatValue(e, fmt);
+		foreach(m; messageTypes) sink.formatValue(m, fmt);
+		if(fmt.spec == 'p') {
+			foreach(opt, val; options) {
+				sink.formattedWrite("option %s = %s; ", opt, val);
+			}
 		}
-		foreach(e;enumTypes) {
-			ret ~= e.toProto();
-		}
-		foreach(msg;messageTypes) {
-			ret ~= msg.toProto();
-		}
-		if(options) {
-			ret ~= "%(%s%)".format(options);
-		}
-		return ret;
 	}
-	string toD() @property {
-		string ret;
-		foreach(dep;dependencies) {
-			ret ~= "mixin ProtocolBuffer!\"%s\";\n".format(dep);
-		}
-		foreach(e;enumTypes) {
-			ret ~= e.toD()~'\n';
-		}
-		foreach(msg;messageTypes) {
-			ret ~= msg.toD()~'\n';
-		}
-		return ret;
-	}
+
+	string toProto() @property const { return "%p".format(this); }
+	string toD() @property const { return "%s".format(this); }
 }
 
 struct Field {
@@ -196,59 +190,64 @@ struct Field {
 	string name;
 	uint id;
 	Options options;
-	string toProto() @property {
-		return "%s %s %s = %s%s;".format(requirement.to!string().toLower(), type, name, id, options.length?" ["~options.to!string()~']':"");
-	}
-	string getDeclaration() {
-		string ret;
-		with(Requirement) final switch(requirement) {
-			case OPTIONAL: ret ~= "Optional"; break;
-			case REPEATED: ret ~= "Repeated"; break;
-			case REQUIRED: ret ~= "Required"; break;
-		}
-		ret ~= `Buffer!(%s, "%s", `.format(id,type);
-		if(IsBuiltinType(type)) {
-			ret ~= `BuffType!"`~type~`"`;
-		} else {
-			ret ~= type;
-		}
-		if(auto dep = "deprecated" in options) {
-			ret ~= ", "~(*dep);
-		} else {
-			ret ~= ", false";
-		}
-		if(requirement == Requirement.OPTIONAL) {
-			if(auto dV = "default" in options) {
-				string dVprefix;
-				if(!IsBuiltinType(type)) {
-					dVprefix = type~".";
-				}
-				ret ~= ", "~(dVprefix)~(*dV);
-			} else if(IsBuiltinType(type)) {
-				ret ~= `, (BuffType!"%s").init`.format(type);
-			} else {
-				ret ~= `, %s.init`.format(type);
-			}
-		} else if(requirement == Requirement.REPEATED) {
-			auto packed = "packed" in options;
-			if(packed !is null && *packed == "true") {
-				ret ~= ", true";
-			} else {
-				ret ~= ", false";
-			}
-		}
-		ret ~= `) %s;`.format(name);
-		return ret;
-	}
-	string getCase() {
-		if(requirement == Requirement.REQUIRED) {
-			return "case %s: {%s.deserialize(msgdata, data);%s_isset = true;break;}".format(id.to!string(), name, name);
-		} else {
-			return "case %s: {%s.deserialize(msgdata, data);break;}".format(id.to!string(), name);
+
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		switch(fmt.spec) {
+			case 'p':
+				sink.formattedWrite("%s %s %s = %s%p; ",
+						requirement.to!string.toLower(),
+						type, name, id, options);
+				break;
+			default:
+				getDeclaration(sink);
+				break;
 		}
 	}
 
-	string getCheck() {
-		return `enforce(%s_isset, new DProtoException("Did not receive expected input %s"));`.format(name, name);
+	string toProto() @property const { return "%p".format(this); }
+	void getDeclaration(scope void delegate(const(char)[]) sink) const {
+		sink(requirement.to!string.capitalize());
+		sink.formattedWrite(`Buffer!(%s, "%s", `, id, type);
+		if(IsBuiltinType(type)) {
+			sink.formattedWrite(`BuffType!"%s"`, type);
+		} else {
+			sink(type);
+		}
+		sink(", ");
+		sink(options.get("deprecated", "false"));
+		if(requirement == Requirement.OPTIONAL) {
+			sink(", ");
+			if(auto dV = "default" in options) {
+				if(!IsBuiltinType(type)) {
+					sink.formattedWrite("%s.", type);
+				}
+				sink(*dV);
+			} else {
+				if(IsBuiltinType(type)) {
+					sink.formattedWrite(`(BuffType!"%s")`, type);
+				} else {
+					sink.formattedWrite("%s", type);
+				}
+				sink(".init");
+			}
+		} else if(requirement == Requirement.REPEATED) {
+			sink(", ");
+			sink(options.get("packed", "true"));
+		}
+		sink.formattedWrite(") %s; ", name);
+	}
+	void getCase(scope void delegate(const(char)[]) sink) const {
+		sink.formattedWrite("case %s: { %s.deserialize(msgdata, data); ", id, name);
+		if(requirement == Requirement.REQUIRED) {
+			sink.formattedWrite("%s_isset = true; ", name);
+		}
+		sink("break; } ");
+	}
+
+	void getCheck(scope void delegate(const(char)[]) sink) const {
+		sink.formattedWrite(
+				`enforce(%s_isset, new DProtoException(`
+				`"Did not receive expected input %s"));`, name, name);
 	}
 }
