@@ -48,20 +48,22 @@ struct MessageType {
 		} else {
 			sink.formattedWrite("struct %s { ", name);
 		}
-		foreach(et; enumTypes) sink.formatValue(et, fmt);
-		foreach(mt; messageTypes) sink.formatValue(mt, fmt);
-		foreach(field; fields) sink.formatValue(field, fmt);
+		foreach(et; enumTypes) et.toString(sink, fmt);
+		foreach(mt; messageTypes) mt.toString(sink, fmt);
+		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
 			// Serialize function
 			sink("ubyte[] serialize() { return ");
 			sink.formattedWrite("%-(%s.serialize()%| ~ %)", fields.map!(a=>a.name));
 			sink("; } ");
 			// Deserialize function
-			sink("void deserialize(ubyte[] data) {");
+			sink("void deserialize(R)(R data) ");
+			sink("if(isInputRange!R && is(ElementType!R == ubyte)) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite("bool %s_isset = false; ", f.name);
 			}
-			sink("while(data.length) { auto msgdata = data.readVarint(); switch(msgdata.msgNum()) {");
+			sink("while(!data.empty) { ");
+			sink("auto msgdata = data.readVarint(); switch(msgdata.msgNum()) { ");
 			foreach(f; fields) { f.getCase(sink); }
 			/// @todo: Safely ignore unrecognized messages
 			sink("default: { defaultDecode(msgdata, data); break; } ");
@@ -159,8 +161,8 @@ struct ProtoPackage {
 				sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, dep);
 			}
 		}
-		foreach(e; enumTypes) sink.formatValue(e, fmt);
-		foreach(m; messageTypes) sink.formatValue(m, fmt);
+		foreach(e; enumTypes) e.toString(sink, fmt);
+		foreach(m; messageTypes) m.toString(sink, fmt);
 		if(fmt.spec == 'p') {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; ", opt, val);
