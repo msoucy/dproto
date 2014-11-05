@@ -10,6 +10,8 @@
 module dproto.dproto;
 
 import std.exception : enforce;
+import std.array;
+import std.range;
 
 /*******************************************************************************
  * Create D structures from proto file
