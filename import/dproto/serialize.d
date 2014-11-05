@@ -77,7 +77,8 @@ unittest {
  *  	header = The data header
  *  	data   = The data to read from
  */
-void defaultDecode(ulong header, ubyte[] data)
+void defaultDecode(R)(ulong header, ref R data)
+	if(isInputRange!R && is(ElementType!R == ubyte))
 {
 	switch(header.wireType) {
 		case 0:
@@ -199,10 +200,12 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-long readVarint(ref ubyte[] src) {
-	size_t i = src.countUntil!( a=>!(a&0x80) )();
-	auto ret = src[0..i+1].fromVarint();
-	src = src[i+1..$];
+long readVarint(R)(ref R src)
+	if(isInputRange!R && is(ElementType!R == ubyte))
+{
+	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
+	auto ret = src.take(i).fromVarint();
+	src = src.drop(i);
 	return ret;
 }
 
@@ -260,31 +263,35 @@ enum PACKED_MSG_TYPE = 2;
  *  	src = The data stream
  * Returns: The decoded value
  */
-BuffType!T readProto(string T)(ref ubyte[] src)
-	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
+BuffType!T readProto(string T, R)(ref R src)
+	if((T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
+	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
 	return src.readVarint().to!(BuffType!T)();
 }
 
 /// Ditto
-BuffType!T readProto(string T)(ref ubyte[] src)
-	if(T == "sint32" || T == "sint64")
+BuffType!T readProto(string T, R)(ref R src)
+	if((T == "sint32" || T == "sint64")
+	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
 	return src.readVarint().fromZigZag().to!(BuffType!T)();
 }
 
 /// Ditto
-BuffType!T readProto(string T)(ref ubyte[] src)
-	if(T == "double" || T == "fixed64" || T == "sfixed64" ||
+BuffType!T readProto(string T, R)(ref R src)
+	if((T == "double" || T == "fixed64" || T == "sfixed64" ||
 		T == "float" || T == "fixed32" || T == "sfixed32")
+	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
 	enforce(src.length >= BuffType!T.sizeof, new DProtoException("Not enough data in buffer"));
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
 
 /// Ditto
-BuffType!T readProto(string T)(ref ubyte[] src)
-	if(T == "string" || T == "bytes")
+BuffType!T readProto(string T, R)(ref R src)
+	if((T == "string" || T == "bytes")
+	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
 	auto length = src.readProto!"uint32"();
 	enforce(src.length >= length, new DProtoException("Not enough data in buffer"));
