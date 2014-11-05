@@ -233,7 +233,7 @@ struct Field {
 			}
 		} else if(requirement == Requirement.REPEATED) {
 			sink(", ");
-			sink(options.get("packed", "true"));
+			sink(options.get("packed", "false"));
 		}
 		sink.formattedWrite(") %s; ", name);
 	}
