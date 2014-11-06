@@ -204,9 +204,9 @@ long readVarint(R)(ref R src)
 	if(isInputRange!R && is(ElementType!R == ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
-	auto ret = src.take(i).fromVarint();
-	src = src.drop(i);
-	return ret;
+	auto ret = src.take(i);
+	src.popFrontExactly(i);
+	return ret.fromVarint();
 }
 
 /*******************************************************************************
@@ -216,7 +216,8 @@ long readVarint(R)(ref R src)
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-ubyte[] toVarint(long src) @property pure nothrow {
+ubyte[] toVarint(long src) @property pure nothrow
+{
 	ubyte[] ret;
 	while(src&(~0x7FUL)) {
 		ret ~= 0x80 | src&0x7F;
@@ -240,15 +241,27 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-long fromVarint(ubyte[] src) @property {
-	return 0L.reduce!((a,b) => (a<<7)|(b&0x7F))(src.retro());
+long fromVarint(R)(R src) @property
+	if(isInputRange!R && is(ElementType!R == ubyte))
+{
+	long ret = 0L;
+	size_t offset = 0;
+	foreach(val; src) {
+		ret |= (val&0x7F)<<offset;
+		offset += 7;
+	}
+	return ret;
 }
 
 unittest {
-	assert([0x96, 0x01].fromVarint() == 150);
-	assert([0x03].fromVarint() == 3);
-	assert([0x8E, 0x02].fromVarint() == 270);
-	assert([0x9E, 0xA7, 0x05].fromVarint() == 86942);
+	ubyte[] ubs(ubyte[] vals...) {
+		return vals.dup;
+	}
+
+	assert(ubs(0x96, 0x01).fromVarint() == 150);
+	assert(ubs(0x03).fromVarint() == 3);
+	assert(ubs(0x8E, 0x02).fromVarint() == 270);
+	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
 }
 
 /// The type to encode an enum as
@@ -284,7 +297,6 @@ BuffType!T readProto(string T, R)(ref R src)
 		T == "float" || T == "fixed32" || T == "sfixed32")
 	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
-	enforce(src.length >= BuffType!T.sizeof, new DProtoException("Not enough data in buffer"));
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
 
@@ -293,11 +305,13 @@ BuffType!T readProto(string T, R)(ref R src)
 	if((T == "string" || T == "bytes")
 	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
-	auto length = src.readProto!"uint32"();
-	enforce(src.length >= length, new DProtoException("Not enough data in buffer"));
-	auto s = cast(BuffType!T)(src.take(length));
-	src=src[length..$];
-	return s;
+	BuffType!T ret;
+	ret.length = src.readProto!"uint32"();
+	foreach(ref c; ret) {
+		c = src.front;
+		src.popFront();
+	}
+	return ret;
 }
 
 /*******************************************************************************
