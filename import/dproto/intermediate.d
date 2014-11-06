@@ -46,21 +46,26 @@ struct MessageType {
 				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
 		} else {
-			sink.formattedWrite("struct %s { ", name);
+			sink.formattedWrite("struct %s {\n", name);
 		}
 		foreach(et; enumTypes) et.toString(sink, fmt);
 		foreach(mt; messageTypes) mt.toString(sink, fmt);
 		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
 			// Serialize function
-			sink("ubyte[] serialize() { return ");
-			sink.formattedWrite("%-(%s.serialize()%| ~ %)", fields.map!(a=>a.name));
-			sink("; } ");
+			sink("ubyte[] serialize() ");
+			sink("{ auto a = appender!(ubyte[]); serializeTo(a); return a.data; }\n");
+			sink("void serializeTo(R)(ref R r)\n");
+			sink("if(isOutputRange!(R, ubyte)) { ");
+			foreach(f; fields) {
+				sink.formattedWrite("%s.serializeTo(r);\n", f.name);
+			}
+			sink("}\n");
 			// Deserialize function
-			sink("void deserialize(R)(R data) ");
+			sink("void deserialize(R)(R data)\n");
 			sink("if(isInputRange!R && is(ElementType!R == ubyte)) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				sink.formattedWrite("bool %s_isset = false; ", f.name);
+				sink.formattedWrite("bool %s_isset = false;\n", f.name);
 			}
 			sink("while(!data.empty) { ");
 			sink("auto msgdata = data.readVarint(); switch(msgdata.msgNum()) { ");
@@ -73,9 +78,18 @@ struct MessageType {
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				f.getCheck(sink);
 			}
-			sink("} this(ubyte[] data) { deserialize(data); }");
+			sink("}\nthis(R)(ref R data)\n");
+			sink("if(isInputRange!R && is(ElementType!R == ubyte))");
+			sink("{ deserialize(data); }\n");
 		}
-		sink("} ");
+		sink("}\n");
+	}
+
+	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
+	{
+		auto fullname = prefix ~ name ~ ".";
+		foreach(e; enumTypes) e.writeFuncs(fullname, sink);
+		foreach(m; messageTypes) m.writeFuncs(fullname, sink);
 	}
 
 	string toProto() @property const { return "%p".format(this); }
@@ -92,30 +106,27 @@ struct EnumType {
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
-		sink.formattedWrite("enum %s {", name);
-		switch(fmt.spec) {
-			case 'p':
-				foreach(opt, val; options) {
-					sink.formattedWrite("option %s = %s; ", opt, val);
-				}
-				foreach(key, val; values) {
-					sink.formattedWrite("%s = %s; ", key, val);
-				}
-				sink("}");
-				break;
-			default:
-				foreach(key, val; values) {
-					sink.formattedWrite("%s = %s, ", key, val);
-				}
-				sink("} ");
-				sink(name);
-				sink(` readProto(string T)(ref ubyte[] src) `);
-				sink.formattedWrite(`if(T == "%s")`, name);
-				sink.formattedWrite(`{ return src.readVarint().to!(%s)(); }`, name);
-				sink.formattedWrite(`ubyte[] serialize(%s src) `, name);
-				sink(`{ return src.toVarint().dup; }`);
-				break;
+		sink.formattedWrite("enum %s {\n", name);
+		string suffix = ", ";
+		if(fmt.spec == 'p') {
+			foreach(opt, val; options) {
+				sink.formattedWrite("option %s = %s; ", opt, val);
+			}
+			suffix = "; ";
 		}
+		foreach(key, val; values) {
+			sink.formattedWrite("%s = %s%s", key, val, suffix);
+		}
+		sink("}\n");
+	}
+
+	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
+	{
+		auto fullname = prefix ~ name;
+		sink(fullname);
+		sink(" readProto(string T)(ref ubyte[] src)\n");
+		sink.formattedWrite(`if(T == "%s")`, fullname);
+		sink.formattedWrite("{ return src.readVarint().to!(%s)(); }\n", fullname);
 	}
 
 	string toProto() @property const { return "%p".format(this); }
@@ -167,6 +178,9 @@ struct ProtoPackage {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
+		} else {
+			foreach(e; enumTypes) e.writeFuncs("", sink);
+			foreach(m; messageTypes) m.writeFuncs("", sink);
 		}
 	}
 
@@ -237,14 +251,14 @@ struct Field {
 			sink(", ");
 			sink(options.get("packed", "false"));
 		}
-		sink.formattedWrite(") %s; ", name);
+		sink.formattedWrite(") %s;\n", name);
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s: { %s.deserialize(msgdata, data); ", id, name);
 		if(requirement == Requirement.REQUIRED) {
 			sink.formattedWrite("%s_isset = true; ", name);
 		}
-		sink("break; } ");
+		sink("break; }\n");
 	}
 
 	void getCheck(scope void delegate(const(char)[]) sink) const {
