@@ -357,25 +357,19 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
-		static if(packed) {
-			enforce(msgdata.wireType() == PACKED_MSG_TYPE,
-					new DProtoException("Type mismatch"));
-			static if(IsBuiltinType(BufferType)) {
+		static if(IsBuiltinType(BufferType)) {
+			if(msgdata.wireType == PACKED_MSG_TYPE) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
 					raw ~= myData.readProto!BufferType().to!RealType();
 				}
 			} else {
-				static assert(0, "Cannot have packed repeated message member");
+				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
 			}
 		} else {
-			enforce(msgdata.wireType() == MsgType!BufferType,
-					new DProtoException("Type mismatch"));
-			static if(IsBuiltinType(BufferType)) {
-				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
-			} else {
-				raw ~= ValueType(data);
-			}
+			enforce(msgdata.wireType == MsgType!BufferType,
+					new DProtoException("Cannot have packed repeated message member"));
+			raw ~= ValueType(data);
 		}
 	}
 
