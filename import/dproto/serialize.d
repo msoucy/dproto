@@ -228,10 +228,10 @@ ubyte[] toVarint(long src) @property pure nothrow
 }
 
 unittest {
-	assert(150.toVarint == [0x96, 0x01]);
-	assert(3.toVarint == [0x03]);
-	assert(270.toVarint == [0x8E, 0x02]);
-	assert(86942.toVarint == [0x9E, 0xA7, 0x05]);
+	assert(equal(150.toVarint, [0x96, 0x01]));
+	assert(equal(3.toVarint, [0x03]));
+	assert(equal(270.toVarint, [0x8E, 0x02]));
+	assert(equal(86942.toVarint, [0x9E, 0xA7, 0x05]));
 }
 
 /*******************************************************************************
@@ -306,9 +306,10 @@ BuffType!T readProto(string T, R)(ref R src)
 	   && (isInputRange!R && is(ElementType!R == ubyte)))
 {
 	BuffType!T ret;
-	ret.length = src.readProto!"uint32"();
-	foreach(ref c; ret) {
-		c = src.front;
+	auto len = src.readProto!"uint32"();
+	ret.reserve(len);
+	foreach(i; 0..len) {
+		ret ~= src.front;
 		src.popFront();
 	}
 	return ret;

@@ -46,7 +46,7 @@ struct MessageType {
 				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
 		} else {
-			sink.formattedWrite("struct %s {\n", name);
+			sink.formattedWrite("static struct %s {\n", name);
 		}
 		foreach(et; enumTypes) et.toString(sink, fmt);
 		foreach(mt; messageTypes) mt.toString(sink, fmt);

@@ -355,7 +355,8 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	void deserialize(R)(long msgdata, ref R data)
 		if(isInputRange!R && is(ElementType!R == ubyte))
 	{
-		enforce(msgdata.msgNum() == id, new DProtoException("Incorrect message number"));
+		enforce(msgdata.msgNum() == id,
+				new DProtoException("Incorrect message number"));
 		static if(packed) {
 			enforce(msgdata.wireType() == PACKED_MSG_TYPE,
 					new DProtoException("Type mismatch"));
