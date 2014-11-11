@@ -1,0 +1,7 @@
+{
+	"name": "dprotoc",
+	"targetType": "executable",
+	"dependencies": {
+		"dproto": {"path": ".."}
+	}
+}
