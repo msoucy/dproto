@@ -2,10 +2,11 @@
 
 ----
 
-This is a project that's designed to enable mixing in a .proto file into your D code at compile time.
+[![Build Status](https://travis-ci.org/msoucy/dproto.svg?branch=master)](https://travis-ci.org/msoucy/dproto)
 
-Inspiration and a good portion of the parser is adapted from square/protoparser
+This project is designed to enable mixing in a .proto file into your D code at compile time.
 
+Inspiration and a good portion of the parser is adapted from [square/protoparser](http://github.com/square/protoparser)
 
 ----
 # Example
