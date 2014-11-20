@@ -122,7 +122,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * 		data	=	The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -211,7 +211,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -345,15 +345,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Received data is appended to the array.
 	 *
-	 * If the buffer is marked as packed, then it will attempt to parse the data
-	 * as a packed buffer. Otherwise, it unpacks an individual element.
-	 *
 	 * Params:
 	 *  	msgdata = The message's ID and type
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -364,7 +361,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 					raw ~= myData.readProto!BufferType().to!RealType();
 				}
 			} else {
-				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
+				raw ~= data.readProto!BufferType().to!RealType();
 			}
 		} else {
 			enforce(msgdata.wireType == MsgType!BufferType,
