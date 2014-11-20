@@ -319,13 +319,13 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(packed) {
-			static if(IsBuiltinType(BufferType)) {
+			static assert(IsBuiltinType(BufferType),
+					"Cannot have packed repeated message member");
+			if(raw.length) {
 				auto msg = raw.map!(writeProto!BufferType)().join();
-				r.put((PACKED_MSG_TYPE | (id << 3)).toVarint());
-				r.put(msg.length.toVarint());
-				r.put(msg);
-			} else {
-				static assert(0, "Cannot have packed repeated message member");
+				put(r, (PACKED_MSG_TYPE | (id << 3)).toVarint());
+				put(r, msg.length.toVarint());
+				put(r, msg);
 			}
 		} else {
 			foreach(val; raw) {
@@ -369,7 +369,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			enforce(msgdata.wireType == MsgType!BufferType,
 					new DProtoException("Cannot have packed repeated message member"));
-			raw ~= ValueType(data);
+			raw ~= ValueType(data.readProto!"bytes"());
 		}
 	}
 

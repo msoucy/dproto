@@ -271,9 +271,6 @@ message Person {
     assert(t.email == "");
 }
 
-//This unittest fails with DMD I don't know how to fix it. In the main function of a Project it works.
-//Bjarne Leif Bruhn 2013-11-24
-//version(GNU)
 unittest
 {
 	mixin ProtocolBufferFromString!"
