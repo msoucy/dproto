@@ -122,7 +122,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * 		data	=	The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -211,7 +211,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -319,13 +319,13 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(packed) {
-			static if(IsBuiltinType(BufferType)) {
+			static assert(IsBuiltinType(BufferType),
+					"Cannot have packed repeated message member");
+			if(raw.length) {
 				auto msg = raw.map!(writeProto!BufferType)().join();
-				r.put((PACKED_MSG_TYPE | (id << 3)).toVarint());
-				r.put(msg.length.toVarint());
-				r.put(msg);
-			} else {
-				static assert(0, "Cannot have packed repeated message member");
+				put(r, (PACKED_MSG_TYPE | (id << 3)).toVarint());
+				put(r, msg.length.toVarint());
+				put(r, msg);
 			}
 		} else {
 			foreach(val; raw) {
@@ -345,15 +345,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Received data is appended to the array.
 	 *
-	 * If the buffer is marked as packed, then it will attempt to parse the data
-	 * as a packed buffer. Otherwise, it unpacks an individual element.
-	 *
 	 * Params:
 	 *  	msgdata = The message's ID and type
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R == ubyte))
+		if(isInputRange!R && is(ElementType!R : const ubyte))
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -364,12 +361,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 					raw ~= myData.readProto!BufferType().to!RealType();
 				}
 			} else {
-				raw ~= data.readProto!BufferType().to!RealType(); // Changes data by ref
+				raw ~= data.readProto!BufferType().to!RealType();
 			}
 		} else {
 			enforce(msgdata.wireType == MsgType!BufferType,
 					new DProtoException("Cannot have packed repeated message member"));
-			raw ~= ValueType(data);
+			raw ~= ValueType(data.readProto!"bytes"());
 		}
 	}
 

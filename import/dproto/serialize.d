@@ -66,7 +66,7 @@ unittest {
 	assert(is(BuffType!"sfixed32" == int) == true);
 	assert(is(BuffType!"double" == double) == true);
 	assert(is(BuffType!"string" == string) == true);
-	assert(is(BuffType!"bytes" == ubyte[]) == true);
+	assert(is(BuffType!"bytes" : const ubyte[]) == true);
 	assert(is(BuffType!"sfixed64" == int) == false);
 }
 
@@ -78,7 +78,7 @@ unittest {
  *  	data   = The data to read from
  */
 void defaultDecode(R)(ulong header, ref R data)
-	if(isInputRange!R && is(ElementType!R == ubyte))
+	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	switch(header.wireType) {
 		case 0:
@@ -201,7 +201,7 @@ unittest {
  * Returns: The decoded value
  */
 long readVarint(R)(ref R src)
-	if(isInputRange!R && is(ElementType!R == ubyte))
+	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
 	auto ret = src.take(i);
@@ -242,7 +242,7 @@ unittest {
  * Returns: The decoded value
  */
 long fromVarint(R)(R src) @property
-	if(isInputRange!R && is(ElementType!R == ubyte))
+	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	long ret = 0L;
 	size_t offset = 0;
@@ -278,7 +278,7 @@ enum PACKED_MSG_TYPE = 2;
  */
 BuffType!T readProto(string T, R)(ref R src)
 	if((T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
-	   && (isInputRange!R && is(ElementType!R == ubyte)))
+	   && (isInputRange!R && is(ElementType!R : const ubyte)))
 {
 	return src.readVarint().to!(BuffType!T)();
 }
@@ -286,7 +286,7 @@ BuffType!T readProto(string T, R)(ref R src)
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
 	if((T == "sint32" || T == "sint64")
-	   && (isInputRange!R && is(ElementType!R == ubyte)))
+	   && (isInputRange!R && is(ElementType!R : const ubyte)))
 {
 	return src.readVarint().fromZigZag().to!(BuffType!T)();
 }
@@ -295,7 +295,7 @@ BuffType!T readProto(string T, R)(ref R src)
 BuffType!T readProto(string T, R)(ref R src)
 	if((T == "double" || T == "fixed64" || T == "sfixed64" ||
 		T == "float" || T == "fixed32" || T == "sfixed32")
-	   && (isInputRange!R && is(ElementType!R == ubyte)))
+	   && (isInputRange!R && is(ElementType!R : const ubyte)))
 {
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
@@ -303,7 +303,7 @@ BuffType!T readProto(string T, R)(ref R src)
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
 	if((T == "string" || T == "bytes")
-	   && (isInputRange!R && is(ElementType!R == ubyte)))
+	   && (isInputRange!R && is(ElementType!R : const ubyte)))
 {
 	BuffType!T ret;
 	auto len = src.readProto!"uint32"();

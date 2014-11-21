@@ -62,13 +62,14 @@ struct MessageType {
 			}
 			sink("}\n");
 			// Deserialize function
-			sink("void deserialize(R)(R data)\n");
-			sink("if(isInputRange!R && is(ElementType!R == ubyte)) {");
+			sink("void deserialize(R)(ref R data)\n");
+			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite("bool %s_isset = false;\n", f.name);
 			}
 			sink("while(!data.empty) { ");
-			sink("auto msgdata = data.readVarint(); switch(msgdata.msgNum()) { ");
+			sink("auto msgdata = data.readVarint();\n");
+			sink("switch(msgdata.msgNum()) { ");
 			foreach(f; fields) { f.getCase(sink); }
 			/// @todo: Safely ignore unrecognized messages
 			sink("default: { defaultDecode(msgdata, data); break; } ");
@@ -76,10 +77,13 @@ struct MessageType {
 			sink("} } ");
 			// Check the required flags
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				f.getCheck(sink);
+				sink.formattedWrite(`enforce(%s_isset, `, f.name);
+				sink.formattedWrite(`new DProtoException(`);
+				sink.formattedWrite(`"Did not receive expected input %s"));`, f.name);
+				sink("\n");
 			}
-			sink("}\nthis(R)(ref R data)\n");
-			sink("if(isInputRange!R && is(ElementType!R == ubyte))");
+			sink("}\nthis(R)(R data)\n");
+			sink("if(isInputRange!R && is(ElementType!R : const ubyte))");
 			sink("{ deserialize(data); }\n");
 		}
 		sink("}\n");
@@ -124,8 +128,9 @@ struct EnumType {
 	{
 		auto fullname = prefix ~ name;
 		sink(fullname);
-		sink(" readProto(string T)(ref ubyte[] src)\n");
-		sink.formattedWrite(`if(T == "%s")`, fullname);
+		sink(" readProto(string T, R)(ref R src)\n");
+		sink.formattedWrite(`if(T == "%s" && `, fullname);
+		sink(`(isInputRange!R && is(ElementType!R : const ubyte)))`);
 		sink.formattedWrite("{ return src.readVarint().to!(%s)(); }\n", fullname);
 	}
 
@@ -254,16 +259,11 @@ struct Field {
 		sink.formattedWrite(") %s;\n", name);
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
-		sink.formattedWrite("case %s: { %s.deserialize(msgdata, data); ", id, name);
+		sink.formattedWrite("case %s:\n", id);
+		sink.formattedWrite("%s.deserialize(msgdata, data);\n", name);
 		if(requirement == Requirement.REQUIRED) {
-			sink.formattedWrite("%s_isset = true; ", name);
+			sink.formattedWrite("%s_isset = true;\n", name);
 		}
-		sink("break; }\n");
-	}
-
-	void getCheck(scope void delegate(const(char)[]) sink) const {
-		sink.formattedWrite(
-				`enforce(%s_isset, new DProtoException(`
-				`"Did not receive expected input %s"));`, name, name);
+		sink("break;\n");
 	}
 }
