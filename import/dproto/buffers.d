@@ -102,13 +102,14 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isOutputRange!(R, ubyte))
 	{
 		if(isset) {
-			r.put((MsgType!BufferType | (id << 3)).toVarint());
+			toVarint(r, MsgType!BufferType | (id << 3));
 			static if(IsBuiltinType(BufferType)) {
-				r.put(raw.writeProto!BufferType());
+				r.writeProto!BufferType(raw);
 			} else {
-				auto tmp = raw.serialize();
-				r.put(tmp.length.toVarint());
-				r.put(tmp);
+				CntRange cnt;
+				raw.serializeTo(cnt);
+				toVarint(r, cnt);
+				raw.serializeTo(r);
 			}
 		}
 	}
@@ -194,13 +195,14 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	void serializeTo(R)(ref R r)
 		if(isOutputRange!(R, ubyte))
 	{
-		r.put((MsgType!BufferType | (id << 3)).toVarint());
+		toVarint(r, MsgType!BufferType | (id << 3));
 		static if(IsBuiltinType(BufferType)) {
-			r.put(raw.writeProto!BufferType());
+			r.writeProto!BufferType(raw);
 		} else {
-			auto tmp = raw.serialize();
-			r.put(tmp.length.toVarint());
-			r.put(tmp);
+			CntRange cnt;
+			raw.serializeTo(cnt);
+			toVarint(r, cnt);
+			raw.serializeTo(r);
 		}
 	}
 	/***************************************************************************
@@ -322,20 +324,24 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			static assert(IsBuiltinType(BufferType),
 					"Cannot have packed repeated message member");
 			if(raw.length) {
-				auto msg = raw.map!(writeProto!BufferType)().join();
-				put(r, (PACKED_MSG_TYPE | (id << 3)).toVarint());
-				put(r, msg.length.toVarint());
-				put(r, msg);
+				CntRange cnt;
+				foreach (ref e; raw)
+					cnt.writeProto!BufferType(e);
+				toVarint(r, PACKED_MSG_TYPE | (id << 3));
+				toVarint(r, cnt);
+				foreach (ref e; raw)
+					r.writeProto!BufferType(e);
 			}
 		} else {
 			foreach(val; raw) {
-				r.put((MsgType!BufferType | (id << 3)).toVarint());
+				toVarint(r, MsgType!BufferType | (id << 3));
 				static if(IsBuiltinType(BufferType)) {
-					r.put(a.writeProto!BufferType());
+					r.writeProto!BufferType(a);
 				} else {
-					auto msg = val.serialize();
-					r.put(msg.length.toVarint);
-					r.put(msg);
+					CntRange cnt;
+					val.serializeTo(cnt);
+					toVarint(r, cnt);
+					val.serializeTo(r);
 				}
 			}
 		}
@@ -370,4 +376,13 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 
+}
+
+private struct CntRange
+{
+@nogc:
+	size_t cnt;
+	void put(in ubyte) { ++cnt; }
+	void put(in ubyte[] ary) { cnt += ary.length; }
+	alias cnt this;
 }
