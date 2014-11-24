@@ -9,6 +9,9 @@ module dproto.serialize;
 
 import dproto.exception;
 
+// nogc compat shim using UDAs (@nogc must appear as function prefix)
+static if (__VERSION__ < 2066) enum nogc;
+
 import std.algorithm;
 import std.array;
 import std.bitmanip;
@@ -123,7 +126,7 @@ template MsgType(string T) {
  *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
-ulong toZigZag(long src) @safe @property pure nothrow {
+@nogc ulong toZigZag(long src) @safe @property pure nothrow {
 	return (src << 1) ^ (src >> 63);
 }
 
@@ -143,7 +146,7 @@ unittest {
  *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
-long fromZigZag(ulong src) @safe @property pure nothrow {
+@nogc long fromZigZag(ulong src) @safe @property pure nothrow {
 	return (cast(long)(src >> 1)) ^ (cast(long)(-(src & 1)));
 }
 
@@ -163,7 +166,7 @@ unittest {
  *  	data = The data header
  * Returns: The wire type value
  */
-ubyte wireType(ulong data) @safe @property pure nothrow {
+@nogc ubyte wireType(ulong data) @safe @property pure nothrow {
 	return data&7;
 }
 
@@ -180,7 +183,7 @@ unittest {
  *  	data = The data header
  * Returns: The message number
  */
-ulong msgNum(ulong data) @safe @property pure nothrow {
+@nogc ulong msgNum(ulong data) @safe @property pure nothrow {
 	return data>>3;
 }
 
@@ -213,27 +216,33 @@ long readVarint(R)(ref R src)
  * Encode a value into a VarInt-encoded series of bytes
  *
  * Params:
+ *  	r = output range
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-ubyte[] toVarint(ulong src) @property pure nothrow
+void toVarint(R)(ref R r, ulong src) @property
+	if(isOutputRange!(R, ubyte))
 {
-	ubyte[] ret;
 	while(src > 0x7F) {
-		ret ~= 0x80 | src&0x7F;
+		r.put(cast(ubyte)(0x80 | src&0x7F));
 		src >>= 7;
 	}
-	ret ~= src&0x7F;
-	return ret;
+	r.put(cast(ubyte)(src&0x7F));
 }
 
 unittest {
-	assert(equal(150.toVarint, [0x96, 0x01]));
-	assert(equal(3.toVarint, [0x03]));
-	assert(equal(270.toVarint, [0x8E, 0x02]));
-	assert(equal(86942.toVarint, [0x9E, 0xA7, 0x05]));
-	assert(equal(uint.max.toVarint, [0xFF, 0xFF, 0xFF, 0xFF, 0xF]));
-	assert(equal(ulong.max.toVarint, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
+	static ubyte[] toVarint(ulong val) @property
+	{
+		auto r = appender!(ubyte[])();
+		.toVarint(r, val);
+		return r.data;
+	}
+	assert(equal(toVarint(150), [0x96, 0x01]));
+	assert(equal(toVarint(3), [0x03]));
+	assert(equal(toVarint(270), [0x8E, 0x02]));
+	assert(equal(toVarint(86942), [0x9E, 0xA7, 0x05]));
+	assert(equal(toVarint(uint.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xF]));
+	assert(equal(toVarint(ulong.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
 }
 
 /*******************************************************************************
@@ -321,33 +330,39 @@ BuffType!T readProto(string T, R)(ref R src)
  * Encode a value into a series of bytes
  *
  * Params:
+ *     r = output range
  *  	src = The raw data
  * Returns: The encoded value
  */
-ubyte[] writeProto(string T)(BuffType!T src)
-	if(T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
+void writeProto(string T, R)(ref R r, BuffType!T src)
+	if(isOutputRange!(R, ubyte) &&
+	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
 {
-	return src.toVarint().dup;
+	toVarint(r, src);
 }
 
 /// Ditto
-ubyte[] writeProto(string T)(BuffType!T src)
-	if(T == "sint32" || T == "sint64")
+void writeProto(string T, R)(ref R r, BuffType!T src)
+	if(isOutputRange!(R, ubyte) &&
+	   (T == "sint32" || T == "sint64"))
 {
-	return src.toZigZag().toVarint().dup;
+	toVarint(r, src.toZigZag);
 }
 
 /// Ditto
-ubyte[] writeProto(string T)(BuffType!T src)
-	if(T == "double" || T == "fixed64" || T == "sfixed64" ||
-		T == "float" || T == "fixed32" || T == "sfixed32")
+void writeProto(string T, R)(ref R r, BuffType!T src)
+	if(isOutputRange!(R, ubyte) &&
+	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
+		T == "float" || T == "fixed32" || T == "sfixed32"))
 {
-	return src.nativeToLittleEndian!(BuffType!T)().dup;
+	r.put(src.nativeToLittleEndian!(BuffType!T)[]);
 }
 
 /// Ditto
-ubyte[] writeProto(string T)(BuffType!T src)
-	if(T == "string" || T == "bytes")
+void writeProto(string T, R)(ref R r, BuffType!T src)
+	if(isOutputRange!(R, ubyte) &&
+	   (T == "string" || T == "bytes"))
 {
-	return src.length.toVarint() ~ cast(ubyte[])(src);
+	toVarint(r, src.length);
+	r.put(cast(ubyte[])src);
 }
