@@ -477,4 +477,18 @@ message AddressBook {
 	assert(addressbook.person[0] == t);
 	assert(addressbook.person[0] == addressbook.person[1]);
 	assert(addressbook.person.length == 2);
+
+	static struct OutBuf
+	{
+	@nogc:
+		void put(in ubyte) {}
+		void put(in ubyte[]) {}
+	}
+
+	@nogc void testNoGC()
+	{
+		OutBuf buf;
+		addressbook.serializeTo(buf);
+	}
+	testNoGC();
 }
