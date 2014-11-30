@@ -216,10 +216,10 @@ long readVarint(R)(ref R src)
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-ubyte[] toVarint(long src) @property pure nothrow
+ubyte[] toVarint(ulong src) @property pure nothrow
 {
 	ubyte[] ret;
-	while(src&(~0x7FUL)) {
+	while(src > 0x7F) {
 		ret ~= 0x80 | src&0x7F;
 		src >>= 7;
 	}
@@ -232,6 +232,9 @@ unittest {
 	assert(equal(3.toVarint, [0x03]));
 	assert(equal(270.toVarint, [0x8E, 0x02]));
 	assert(equal(86942.toVarint, [0x9E, 0xA7, 0x05]));
+	assert(equal(uint.max.toVarint, [0xFF, 0xFF, 0xFF, 0xFF, 0xF]));
+	assert(equal(ulong.max.toVarint, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
+	assert(equal((-1).toVarint, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
 }
 
 /*******************************************************************************
