@@ -492,3 +492,32 @@ message AddressBook {
 	}
 	testNoGC();
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+message Person {
+  required string name = 1;
+}
+";
+
+	static auto rvalue(in ubyte[] val) { return val; }
+
+	enum data = cast(ubyte[])[1 << 3 | 2, "abc".length] ~ cast(ubyte[])"abc";
+	const(ubyte)[] val = data;
+	assert(val.length == 5);
+	assert(Person(rvalue(val)).name == "abc");
+	assert(val.length == 5);
+	assert(Person(val).name == "abc");
+	assert(val.length == 0);
+	Person p;
+	val = data;
+	assert(val.length == 5);
+	p.deserialize(rvalue(val));
+	assert(val.length == 5);
+	assert(p.name == "abc");
+	p.name = null;
+	p.deserialize(val);
+	assert(val.length == 0);
+	assert(p.name == "abc");
+}

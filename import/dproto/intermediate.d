@@ -62,7 +62,7 @@ struct MessageType {
 			}
 			sink("}\n");
 			// Deserialize function
-			sink("void deserialize(R)(ref R data)\n");
+			sink("void deserialize(R)(auto ref R data)\n");
 			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite("bool %s_isset = false;\n", f.name);
@@ -82,7 +82,7 @@ struct MessageType {
 				sink.formattedWrite(`"Did not receive expected input %s"));`, f.name);
 				sink("\n");
 			}
-			sink("}\nthis(R)(R data)\n");
+			sink("}\nthis(R)(auto ref R data)\n");
 			sink("if(isInputRange!R && is(ElementType!R : const ubyte))");
 			sink("{ deserialize(data); }\n");
 		}
