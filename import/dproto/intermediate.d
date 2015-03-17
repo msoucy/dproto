@@ -170,7 +170,7 @@ struct ProtoPackage {
 				sink.formattedWrite("package %s; ", packageName);
 			}
 			foreach(dep; dependencies) {
-				sink.formattedWrite("import %s; ");
+                               sink.formattedWrite(`import "%s"; `, dep);
 			}
 		} else {
 			foreach(dep;dependencies) {
