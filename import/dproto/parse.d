@@ -86,9 +86,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "import": {
 					static if(is(Context==ProtoPackage)) {
-                                               enforce(readChar() == '"', unexpected("imports should be quoted"));
-						context.dependencies ~= readString();
-						enforce(readChar() == '"', unexpected("expected '\"'"));
+						context.dependencies ~= readQuotedPath ();
 						enforce(readChar() == ';', unexpected("expected ';'"));
 						return;
 					} else {
@@ -393,6 +391,14 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			throw unexpected("unterminated string");
 		}
 
+		string readQuotedPath() {
+			skipWhitespace(true);
+			enforce(readChar() == '"', unexpected("imports should be quoted"));
+			auto ret = readWord(`a-zA-Z0-9_.\-/`);
+			enforce(readChar() == '"', unexpected("imports should be quoted"));
+			return ret;
+		}
+
 		/** Reads a (paren-wrapped), [square-wrapped] or naked symbol name. */
 		string readName() {
 			string optionName;
@@ -412,12 +418,12 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads a non-empty word and returns it. */
-		string readWord() {
+		string readWord(string pattern = `a-zA-Z0-9_.\-`) {
 			skipWhitespace(true);
 			int start = pos;
 			while (pos < data.length) {
 				char c = data[pos];
-				if(c.inPattern(`a-zA-Z0-9_.\-`)) {
+				if(c.inPattern(pattern)) {
 					pos++;
 				} else {
 					break;

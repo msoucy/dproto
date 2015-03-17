@@ -524,16 +524,16 @@ message Person {
 
 unittest
 {
-    import dproto.buffers;
-    import dproto.exception;
-    import dproto.serialize;
-    import dproto.parse;
-    import std.string : strip;
-    auto proto_src = `import "foo.baz.proto";`;
-    auto proto_struct = ParseProtoSchema("<none>", proto_src);
-    auto d_src = proto_struct.toD;
-    assert(`mixin ProtocolBuffer!"foo.baz.proto";` == d_src,
-           "Mixin string should not have two double quotes " ~ d_src);
-    assert(proto_src == proto_struct.toProto.strip,
-           "Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
+	import dproto.buffers;
+	import dproto.exception;
+	import dproto.serialize;
+	import dproto.parse;
+	import std.string : strip;
+	auto proto_src = `import "foo/baz.proto";`;
+	auto proto_struct = ParseProtoSchema("<none>", proto_src);
+	auto d_src = proto_struct.toD;
+	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
+	       "Mixin string should not have two double quotes " ~ d_src);
+	assert(proto_src == proto_struct.toProto.strip,
+	       "Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
 }
