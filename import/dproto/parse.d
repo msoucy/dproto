@@ -86,7 +86,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "import": {
 					static if(is(Context==ProtoPackage)) {
+                                               enforce(readChar() == '"', unexpected("imports should be quoted"));
 						context.dependencies ~= readString();
+						enforce(readChar() == '"', unexpected("expected '\"'"));
 						enforce(readChar() == ';', unexpected("expected ';'"));
 						return;
 					} else {
