@@ -26,6 +26,7 @@ template ProtocolBuffer(string s)
 	import dproto.exception;
 	import dproto.serialize;
 	import dproto.parse;
+	import std.range;
 	mixin(ParseProtoSchema(s,import(s)).toD());
 }
 
@@ -40,6 +41,7 @@ template ProtocolBufferFromString(string s)
 	import dproto.exception;
 	import dproto.serialize;
 	import dproto.parse;
+	import std.range;
 	mixin(ParseProtoSchema("<none>",s).toD());
 }
 

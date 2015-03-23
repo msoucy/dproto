@@ -1,15 +1,15 @@
 {
-	"name": "simple_file",
+	"name": "dproto_simple_file",
 	"description": "An simple example with proto file import.",
-	"homepage": "https://github.com/chickeaterbanana/dproto",
+	"homepage": "https://github.com/msoucy/dproto",
 	"copyright": "Copyright © 2013, Bjarne Leif Bruhn",
 	"authors": [
 		"Bjarne Leif Bruhn"
 	],
 	"dependencies": {
-        "dproto": "~master"
+		"dproto": {"path": "../.."}
 	},
-    	"stringImportPaths": [
-    		"proto"
-    	]
+	"stringImportPaths": [
+		"proto"
+	]
 }
