@@ -336,7 +336,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			foreach(val; raw) {
 				toVarint(r, MsgType!BufferType | (id << 3));
 				static if(IsBuiltinType(BufferType)) {
-					r.writeProto!BufferType(a);
+					r.writeProto!BufferType(val);
 				} else {
 					CntRange cnt;
 					val.serializeTo(cnt);
