@@ -79,7 +79,7 @@ struct MessageType {
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite(`enforce(%s_isset, `, f.name);
 				sink.formattedWrite(`new DProtoException(`);
-				sink.formattedWrite(`"Did not receive expected input %s"));`, f.name);
+				sink.formattedWrite(`"Did not receive expected input \"%s\""));`, f.name);
 				sink("\n");
 			}
 			sink("}\nthis(R)(auto ref R data)\n");
