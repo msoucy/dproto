@@ -228,7 +228,7 @@ long readVarint(R)(ref R src)
 }
 
 /*******************************************************************************
- * Encode a unsigned value into a VarInt-encoded series of bytes
+ * Encode an unsigned value into a VarInt-encoded series of bytes
  *
  * Params:
  *  	r = output range
