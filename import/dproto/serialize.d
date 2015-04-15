@@ -147,7 +147,7 @@ unittest {
  *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
-Signed!T fromZigZag(T)(inout T src) pure nothrow @safe @property
+Signed!T fromZigZag(T)(inout T src) pure nothrow @safe @nogc @property
 if(isUnsigned!T)
 {
     Signed!T res = (src & 1)
