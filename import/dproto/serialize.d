@@ -242,7 +242,7 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	
 	while( src >= maxMask )
 	{
-		r.put(cast( ubyte )( src | maxMask ));
+		r.put(cast(ubyte)(src | maxMask));
 		src >>= 7;
 	}
 	
@@ -253,7 +253,7 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
  * Encode a signed value into a VarInt-encoded series of bytes
  *
  * This function is useful for encode int32 and int64 value types
- * (Not confuse it with signed values encoded by ZigZag!)
+ * (Do not confuse it with signed values encoded by ZigZag!)
  *
  * Params:
  *  	r = output range
@@ -278,6 +278,7 @@ unittest {
 	assert(equal(toVarint(3), [0x03]));
 	assert(equal(toVarint(270), [0x8E, 0x02]));
 	assert(equal(toVarint(86942), [0x9E, 0xA7, 0x05]));
+	assert(equal(toVarint(ubyte.max), [0xFF, 0x01]));
 	assert(equal(toVarint(uint.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xF]));
 	assert(equal(toVarint(ulong.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
 	assert(equal(toVarint(-1), [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
