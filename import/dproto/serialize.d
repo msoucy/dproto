@@ -19,6 +19,7 @@ import std.conv;
 import std.exception;
 import std.range;
 import std.system : Endian;
+import std.traits;
 
 /*******************************************************************************
  * Returns whether the given string is a protocol buffer primitive
@@ -146,17 +147,25 @@ unittest {
  *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
-@nogc long fromZigZag(ulong src) @safe @property pure nothrow {
-	return (cast(long)(src >> 1)) ^ (cast(long)(-(src & 1)));
+Signed!T fromZigZag(T)(inout T src) pure nothrow @safe @property
+if(isUnsigned!T)
+{
+    Signed!T res = (src & 1)
+        ?
+            -(src >> 1) - 1
+        :
+            src >> 1;
+	
+    return res;
 }
 
 unittest {
-	assert(0.fromZigZag() == 0);
-	assert(1.fromZigZag() == -1);
-	assert(2.fromZigZag() == 1);
-	assert(3.fromZigZag() == -2);
-	assert(4294967294.fromZigZag() == 2147483647);
-	assert(4294967295.fromZigZag() == -2147483648);
+	assert(0U.fromZigZag() == 0);
+	assert(1U.fromZigZag() == -1);
+	assert(2U.fromZigZag() == 1);
+	assert(3U.fromZigZag() == -2);
+	assert(4294967294U.fromZigZag() == 2147483647);
+	assert(4294967295U.fromZigZag() == -2147483648);
 }
 
 /*******************************************************************************
