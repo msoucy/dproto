@@ -250,13 +250,6 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 }
 
 /// Ditto
-void toVarint(R)(ref R r, bool src) @trusted @property
-{
-	ulong s = src;
-	toVarint(r, s);
-}
-
-/// Ditto
 void toVarint(R)(ref R r, long src) @trusted @property
 {
 	ulong s = src;
