@@ -127,8 +127,14 @@ template MsgType(string T) {
  *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
-@nogc ulong toZigZag(long src) @safe @property pure nothrow {
-	return (src << 1) ^ (src >> 63);
+Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @nogc @property
+if(isSigned!T)
+{
+    return cast( Unsigned!T )(
+            src >= 0 ?
+				src * 2 :
+				-src * 2 - 1
+        );
 }
 
 unittest {
