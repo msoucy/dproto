@@ -130,11 +130,11 @@ template MsgType(string T) {
 Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @nogc @property
 	if(isIntegral!T && isSigned!T)
 {
-    return cast(Unsigned!T)(
-            src >= 0 ?
+	return cast(Unsigned!T)(
+			src >= 0 ?
 				src * 2 :
 				-src * 2 - 1
-        );
+		);
 }
 
 unittest {
@@ -156,13 +156,13 @@ unittest {
 Signed!T fromZigZag(T)(inout T src) pure nothrow @safe @nogc @property
 	if(isIntegral!T && isUnsigned!T)
 {
-    Signed!T res = (src & 1)
-        ?
-            -(src >> 1) - 1
-        :
-            src >> 1;
+	Signed!T res = (src & 1)
+		?
+			-(src >> 1) - 1
+		:
+			src >> 1;
 	
-    return res;
+	return res;
 }
 
 unittest {
@@ -238,15 +238,15 @@ long readVarint(R)(ref R src)
 void toVarint(R, T)(ref R r, T src) @trusted @property
 	if(isOutputRange!(R, ubyte)) // FIXME: && isIntegral!T && isUnsigned!T)
 {
-    immutable ubyte maxMask = 0b_1000_0000;
-    
-    while( src >= maxMask )
-    {
-        r.put(cast( ubyte )( src | maxMask ));
-        src >>= 7;
-    }
-    
-    r.put(cast(ubyte) src);
+	immutable ubyte maxMask = 0b_1000_0000;
+	
+	while( src >= maxMask )
+	{
+		r.put(cast( ubyte )( src | maxMask ));
+		src >>= 7;
+	}
+	
+	r.put(cast(ubyte) src);
 }
 
 unittest {
