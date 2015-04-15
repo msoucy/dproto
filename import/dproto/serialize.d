@@ -260,10 +260,10 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-void toVarint(R, T)(ref R r, T src) @safe @property
-	if(isOutputRange!(R, ubyte) && isIntegral!T && isSigned!T)
+void toVarint(R)(ref R r, long src) @safe @property
+	if(isOutputRange!(R, ubyte))
 {
-	Unsigned!T u = src;
+	ulong u = src;
 	toVarint(r, u);
 }
 
@@ -304,11 +304,11 @@ T fromVarint(T = ulong, R)(R src) @property
 		ret |= cast(T)(val & mask) << offset;
 		
 		enforce(
-				offset + 7 <= T.sizeof * 8,
+				offset < T.sizeof * 8,
 				"Varint value is too big for the type " ~ T.stringof
 			);
 		
-		offset+=7;
+		offset += 7;
 	}
 	
 	return ret;
@@ -325,8 +325,8 @@ T fromVarint(T, R)(R src) @property
 	if(isInputRange!R && is(ElementType!R : const ubyte) &&
 		isIntegral!T && isSigned!T)
 {
-	T r = fromVarint!(Unsigned!T)(src);
-	return r;
+	long r = fromVarint!ulong(src);
+	return r.to!T;
 }
 
 unittest {
@@ -338,10 +338,11 @@ unittest {
 	assert(ubs(0x03).fromVarint() == 3);
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
+	assert(ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint!int() == -1);
 	
 	bool overflow = false;
 	try
-		ubs(0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0xA7, 0x05).fromVarint();
+		ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint();
 	catch(Exception)
 		overflow = true;
 	finally
