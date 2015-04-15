@@ -285,13 +285,13 @@ unittest {
 }
 
 /*******************************************************************************
- * Decode a VarInt-encoded series of bytes into a value
+ * Decode a VarInt-encoded series of bytes into an unsigned value
  *
  * Params:
  *  	src = The data stream
  * Returns: The decoded value
  */
-T fromVarint(R, T = ulong)(R src) @property
+T fromVarint(T = ulong, R)(R src) @property
 	if(isInputRange!R && is(ElementType!R : const ubyte) &&
 		isIntegral!T && isUnsigned!T)
 {
@@ -312,6 +312,21 @@ T fromVarint(R, T = ulong)(R src) @property
 	}
 	
 	return ret;
+}
+
+/*******************************************************************************
+ * Decode a VarInt-encoded series of bytes into a signed value
+ *
+ * Params:
+ *  	src = The data stream
+ * Returns: The decoded value
+ */
+T fromVarint(T, R)(R src) @property
+	if(isInputRange!R && is(ElementType!R : const ubyte) &&
+		isIntegral!T && isSigned!T)
+{
+	T r = fromVarint!(Unsigned!T)(src);
+	return r;
 }
 
 unittest {
