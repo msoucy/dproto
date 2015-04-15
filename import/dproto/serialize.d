@@ -286,7 +286,7 @@ T fromVarint(R, T = ulong)(R src) @property
 		
 		enforce(
 				offset + 7 <= T.sizeof * 8,
-				"Varint is too big for type " ~ T.stringof
+				"Varint value is too big for the type " ~ T.stringof
 			);
 		
 		offset+=7;
