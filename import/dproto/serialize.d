@@ -235,14 +235,18 @@ long readVarint(R)(ref R src)
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-void toVarint(R)(ref R r, ulong src) @property
-	if(isOutputRange!(R, ubyte))
+void toVarint(R, T)(ref R r, T src) @trusted @property
+	if(isOutputRange!(R, ubyte)) // FIXME: && isIntegral!T && isUnsigned!T)
 {
-	while(src > 0x7F) {
-		r.put(cast(ubyte)(0x80 | src&0x7F));
-		src >>= 7;
-	}
-	r.put(cast(ubyte)(src&0x7F));
+    immutable ubyte maxMask = 0b_1000_0000;
+    
+    while( src >= maxMask )
+    {
+        r.put(cast( ubyte )( src | maxMask ));
+        src >>= 7;
+    }
+    
+    r.put(cast(ubyte) src);
 }
 
 unittest {
