@@ -272,9 +272,9 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T fromVarint(R, T = long)(R src) @property
+T fromVarint(R, T = ulong)(R src) @property
 	if(isInputRange!R && is(ElementType!R : const ubyte) &&
-		isIntegral!T) // FIXME: add && isUnsigned!T)
+		isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte mask = 0b_0111_1111;
 	T ret;
