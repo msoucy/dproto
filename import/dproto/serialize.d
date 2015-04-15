@@ -272,15 +272,26 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-long fromVarint(R)(R src) @property
-	if(isInputRange!R && is(ElementType!R : const ubyte))
+T fromVarint(R, T = long)(R src) @property
+	if(isInputRange!R && is(ElementType!R : const ubyte) &&
+		isIntegral!T) // FIXME: add && isUnsigned!T)
 {
-	long ret = 0L;
-	size_t offset = 0;
-	foreach(val; src) {
-		ret |= (val&0x7F)<<offset;
-		offset += 7;
+	immutable ubyte mask = 0b_0111_1111;
+	T ret;
+	
+	size_t offset;
+	foreach(val; src)
+	{
+		ret |= cast(T)(val & mask) << offset;
+		
+		enforce(
+				offset + 7 <= T.sizeof * 8,
+				"Varint is too big for type " ~ T.stringof
+			);
+		
+		offset+=7;
 	}
+	
 	return ret;
 }
 
@@ -293,6 +304,14 @@ unittest {
 	assert(ubs(0x03).fromVarint() == 3);
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
+	
+	bool overflow = false;
+	try
+		ubs(0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0x9E, 0xA7, 0x05).fromVarint();
+	catch(Exception)
+		overflow = true;
+	finally
+		assert(overflow);
 }
 
 /// The type to encode an enum as
