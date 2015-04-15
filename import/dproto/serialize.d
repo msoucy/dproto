@@ -127,7 +127,7 @@ template MsgType(string T) {
  *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
-Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @nogc @property
+@nogc Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @property
 	if(isIntegral!T && isSigned!T)
 {
 	return cast(Unsigned!T)(
