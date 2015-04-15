@@ -130,7 +130,7 @@ template MsgType(string T) {
 Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @nogc @property
 if(isIntegral!T && isSigned!T)
 {
-    return cast( Unsigned!T )(
+    return cast(Unsigned!T)(
             src >= 0 ?
 				src * 2 :
 				-src * 2 - 1
