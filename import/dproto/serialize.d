@@ -228,7 +228,7 @@ long readVarint(R)(ref R src)
 }
 
 /*******************************************************************************
- * Encode a value into a VarInt-encoded series of bytes
+ * Encode a unsigned value into a VarInt-encoded series of bytes
  *
  * Params:
  *  	r = output range
@@ -249,11 +249,22 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	r.put(cast(ubyte) src);
 }
 
-/// Ditto
-void toVarint(R)(ref R r, long src) @safe @property
+/*******************************************************************************
+ * Encode a signed value into a VarInt-encoded series of bytes
+ *
+ * This function is useful for encode int32 and int64 value types
+ * (Not confuse it with signed values encoded by ZigZag!)
+ *
+ * Params:
+ *  	r = output range
+ *  	src = The value to encode
+ * Returns: The created VarInt
+ */
+void toVarint(R, T)(ref R r, T src) @safe @property
+	if(isOutputRange!(R, ubyte) && isIntegral!T && isSigned!T)
 {
-	ulong s = src;
-	toVarint(r, s);
+	Unsigned!T u = src;
+	toVarint(r, u);
 }
 
 unittest {
