@@ -236,7 +236,7 @@ long readVarint(R)(ref R src)
  * Returns: The created VarInt
  */
 void toVarint(R, T)(ref R r, T src) @trusted @property
-	if(isOutputRange!(R, ubyte)) // FIXME: && isIntegral!T && isUnsigned!T)
+	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte maxMask = 0b_1000_0000;
 	
@@ -247,6 +247,20 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	}
 	
 	r.put(cast(ubyte) src);
+}
+
+/// Ditto
+void toVarint(R)(ref R r, bool src) @trusted @property
+{
+	ulong s = src;
+	toVarint(r, s);
+}
+
+/// Ditto
+void toVarint(R)(ref R r, long src) @trusted @property
+{
+	ulong s = src;
+	toVarint(r, s);
 }
 
 unittest {
