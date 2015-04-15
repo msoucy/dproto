@@ -128,7 +128,7 @@ template MsgType(string T) {
  * Returns: The zigzag-encoded value
  */
 Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @nogc @property
-if(isIntegral!T && isSigned!T)
+	if(isIntegral!T && isSigned!T)
 {
     return cast(Unsigned!T)(
             src >= 0 ?
@@ -154,7 +154,7 @@ unittest {
  * Returns: The raw integer
  */
 Signed!T fromZigZag(T)(inout T src) pure nothrow @safe @nogc @property
-if(isIntegral!T && isUnsigned!T)
+	if(isIntegral!T && isUnsigned!T)
 {
     Signed!T res = (src & 1)
         ?
