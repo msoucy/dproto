@@ -156,13 +156,9 @@ unittest {
 @nogc Signed!T fromZigZag(T)(in T src) pure nothrow @safe @property
 	if(isIntegral!T && isUnsigned!T)
 {
-	Signed!T res = (src & 1)
-		?
-			-(src >> 1) - 1
-		:
-			src >> 1;
-	
-	return res;
+	return (src & 1) ?
+		-(src >> 1) - 1 :
+		src >> 1;
 }
 
 unittest {
