@@ -108,7 +108,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			} else {
 				CntRange cnt;
 				raw.serializeTo(cnt);
-				toVarint(r, cnt);
+				toVarint(r, cnt.cnt);
 				raw.serializeTo(r);
 			}
 		}
@@ -201,7 +201,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			CntRange cnt;
 			raw.serializeTo(cnt);
-			toVarint(r, cnt);
+			toVarint(r, cnt.cnt);
 			raw.serializeTo(r);
 		}
 	}
@@ -328,7 +328,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 				foreach (ref e; raw)
 					cnt.writeProto!BufferType(e);
 				toVarint(r, PACKED_MSG_TYPE | (id << 3));
-				toVarint(r, cnt);
+				toVarint(r, cnt.cnt);
 				foreach (ref e; raw)
 					r.writeProto!BufferType(e);
 			}
@@ -340,7 +340,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 				} else {
 					CntRange cnt;
 					val.serializeTo(cnt);
-					toVarint(r, cnt);
+					toVarint(r, cnt.cnt);
 					val.serializeTo(r);
 				}
 			}
