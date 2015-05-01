@@ -132,7 +132,8 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
-			raw.deserialize(data);
+			auto myData = data.readProto!"bytes"();
+			raw.deserialize(myData);
 		}
 		isset = true;
 	}
@@ -222,7 +223,8 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
-			raw.deserialize(data);
+			auto myData = data.readProto!"bytes"();
+			raw.deserialize(myData);
 		}
 	}
 
