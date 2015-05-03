@@ -574,3 +574,24 @@ unittest
 	assert(d1.keyValue.key == d2.keyValue.key);
 	assert(d1.keyValue.payload == d2.keyValue.payload);
 }
+
+unittest
+{
+
+	mixin ProtocolBufferFromString!`
+		message DNSPayload
+		{
+			repeated bytes assignOwnerPubKeys = 1;
+			repeated bytes assignManagersPubKeys = 2;
+
+			repeated bytes ns = 3;
+		}
+	`;
+
+	DNSPayload p1;
+	p1.ns ~= [1, 2, 3];
+	auto buf = p1.serialize();
+
+	DNSPayload p2;
+	p2.deserialize(buf);
+}

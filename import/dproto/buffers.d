@@ -363,7 +363,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
 		static if(IsBuiltinType(BufferType)) {
-			if(msgdata.wireType == PACKED_MSG_TYPE) {
+			if(msgdata.wireType == PACKED_MSG_TYPE && MsgType!BufferType != 2) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
 					raw ~= myData.readProto!BufferType().to!RealType();
