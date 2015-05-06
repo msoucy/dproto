@@ -9,6 +9,7 @@
  */
 module dproto.intermediate;
 
+import dproto.attributes;
 import dproto.serialize;
 
 import std.algorithm;
@@ -96,7 +97,6 @@ struct MessageType {
 		foreach(m; messageTypes) m.writeFuncs(fullname, sink);
 	}
 
-	string toProto() @property const { return "%p".format(this); }
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -134,7 +134,6 @@ struct EnumType {
 		sink.formattedWrite("{ return src.readVarint().to!(%s)(); }\n", fullname);
 	}
 
-	string toProto() @property const { return "%p".format(this); }
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -226,8 +225,14 @@ struct Field {
 		}
 	}
 
-	string toProto() @property const { return "%p".format(this); }
 	void getDeclaration(scope void delegate(const(char)[]) sink) const {
+		if(requirement == Requirement.REQUIRED) {
+			sink("@(dproto.attributes.ProtoRequired)\n");
+		}
+		sink("@(dproto.attributes.ProtoField");
+		sink.formattedWrite(`("%s", %s)`, type, id);
+		sink(")\n");
+
 		sink(requirement.to!string.capitalize());
 		sink.formattedWrite(`Buffer!(%s, "%s", `, id, type);
 		if(IsBuiltinType(type)) {
@@ -256,7 +261,7 @@ struct Field {
 			sink(", ");
 			sink(options.get("packed", "false"));
 		}
-		sink.formattedWrite(") %s;\n", name);
+		sink.formattedWrite(") %s;\n\n", name);
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);
