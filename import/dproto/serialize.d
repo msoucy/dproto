@@ -235,13 +235,13 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte maxMask = 0b_1000_0000;
-	
+
 	while( src >= maxMask )
 	{
 		r.put(cast(ubyte)(src | maxMask));
 		src >>= 7;
 	}
-	
+
 	r.put(cast(ubyte) src);
 }
 
@@ -295,20 +295,20 @@ T fromVarint(T = ulong, R)(R src) @property
 {
 	immutable ubyte mask = 0b_0111_1111;
 	T ret;
-	
+
 	size_t offset;
 	foreach(val; src)
 	{
 		ret |= cast(T)(val & mask) << offset;
-		
+
 		enforce(
 				offset < T.sizeof * 8,
 				"Varint value is too big for the type " ~ T.stringof
 			);
-		
+
 		offset += 7;
 	}
-	
+
 	return ret;
 }
 
@@ -337,7 +337,7 @@ unittest {
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
 	assert(ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint!int() == -1);
-	
+
 	bool overflow = false;
 	try
 		ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint();
@@ -406,7 +406,7 @@ BuffType!T readProto(string T, R)(ref R src)
  *  	src = The raw data
  * Returns: The encoded value
  */
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const(BuffType!T) src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
 {
@@ -414,7 +414,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const(BuffType!T) src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "sint32" || T == "sint64"))
 {
@@ -422,7 +422,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const(BuffType!T) src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
 		T == "float" || T == "fixed32" || T == "sfixed32"))
@@ -431,7 +431,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const(BuffType!T) src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "string" || T == "bytes"))
 {
