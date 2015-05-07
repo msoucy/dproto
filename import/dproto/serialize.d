@@ -28,18 +28,18 @@ import std.traits;
  *  	type = The type to check for
  * Returns: True if the type is a protocol buffer primitive
  */
-bool IsBuiltinType(string type) @safe pure nothrow {
+bool isBuiltinType(string type) @safe pure nothrow {
 	return ["int32" , "sint32", "int64", "sint64", "uint32", "uint64", "bool",
 			"fixed64", "sfixed64", "double", "bytes", "string",
 			"fixed32", "sfixed32", "float"].canFind(type);
 }
 
 unittest {
-	assert(IsBuiltinType("sfixed32") == true);
-	assert(IsBuiltinType("double") == true);
-	assert(IsBuiltinType("string") == true);
-	assert(IsBuiltinType("int128") == false);
-	assert(IsBuiltinType("quad") == false);
+	assert(isBuiltinType("sfixed32") == true);
+	assert(isBuiltinType("double") == true);
+	assert(isBuiltinType("string") == true);
+	assert(isBuiltinType("int128") == false);
+	assert(isBuiltinType("quad") == false);
 }
 
 /*******************************************************************************
@@ -105,18 +105,20 @@ void defaultDecode(R)(ulong header, ref R data)
 /*******************************************************************************
  * Maps the given type string to the wire type number
  */
-template MsgType(string T) {
-	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" ||
-			T == "uint32" || T == "uint64" || T == "bool") {
-		enum MsgType = 0;
-	} else static if(T == "fixed64" || T == "sfixed64" || T == "double") {
-		enum MsgType = 1;
-	} else static if(T == "bytes" || T == "string") {
-		enum MsgType = 2;
-	} else static if(T == "fixed32" || T == "sfixed32" || T == "float") {
-		enum MsgType = 5;
-	} else {
-		enum MsgType = 2;
+auto msgType(string T) {
+	switch(T) {
+		case "int32", "sint32", "uint32":
+		case "int64", "sint64", "uint64":
+		case "bool":
+			return 0;
+		case "fixed64", "sfixed64", "double":
+			return 1;
+		case "bytes", "string":
+			return 2;
+		case "fixed32", "sfixed32", "float":
+			return 5;
+		default:
+			return 2;
 	}
 }
 
@@ -235,13 +237,13 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte maxMask = 0b_1000_0000;
-	
+
 	while( src >= maxMask )
 	{
 		r.put(cast(ubyte)(src | maxMask));
 		src >>= 7;
 	}
-	
+
 	r.put(cast(ubyte) src);
 }
 
@@ -295,20 +297,20 @@ T fromVarint(T = ulong, R)(R src) @property
 {
 	immutable ubyte mask = 0b_0111_1111;
 	T ret;
-	
+
 	size_t offset;
 	foreach(val; src)
 	{
 		ret |= cast(T)(val & mask) << offset;
-		
+
 		enforce(
 				offset < T.sizeof * 8,
 				"Varint value is too big for the type " ~ T.stringof
 			);
-		
+
 		offset += 7;
 	}
-	
+
 	return ret;
 }
 
@@ -337,7 +339,7 @@ unittest {
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
 	assert(ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint!int() == -1);
-	
+
 	bool overflow = false;
 	try
 		ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint();

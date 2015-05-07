@@ -102,8 +102,8 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isOutputRange!(R, ubyte))
 	{
 		if(isset) {
-			toVarint(r, MsgType!BufferType | (id << 3));
-			static if(IsBuiltinType(BufferType)) {
+			toVarint(r, BufferType.msgType | (id << 3));
+			static if(BufferType.isBuiltinType) {
 				r.writeProto!BufferType(raw);
 			} else {
 				CntRange cnt;
@@ -127,9 +127,9 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
-		enforce(msgdata.wireType() == MsgType!BufferType,
+		enforce(msgdata.wireType() == BufferType.msgType,
 				new DProtoException("Type mismatch"));
-		static if(IsBuiltinType(BufferType)) {
+		static if(BufferType.isBuiltinType) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
 			auto myData = data.readProto!"bytes"();
@@ -196,8 +196,8 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	void serializeTo(R)(ref R r)
 		if(isOutputRange!(R, ubyte))
 	{
-		toVarint(r, MsgType!BufferType | (id << 3));
-		static if(IsBuiltinType(BufferType)) {
+		toVarint(r, BufferType.msgType | (id << 3));
+		static if(BufferType.isBuiltinType) {
 			r.writeProto!BufferType(raw);
 		} else {
 			CntRange cnt;
@@ -218,9 +218,9 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
-		enforce(msgdata.wireType() == MsgType!BufferType,
+		enforce(msgdata.wireType() == BufferType.msgType,
 				new DProtoException("Type mismatch"));
-		static if(IsBuiltinType(BufferType)) {
+		static if(BufferType.isBuiltinType) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
 			auto myData = data.readProto!"bytes"();
@@ -323,7 +323,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(packed) {
-			static assert(IsBuiltinType(BufferType),
+			static assert(BufferType.isBuiltinType,
 					"Cannot have packed repeated message member");
 			if(raw.length) {
 				CntRange cnt;
@@ -336,8 +336,8 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			}
 		} else {
 			foreach(val; raw) {
-				toVarint(r, MsgType!BufferType | (id << 3));
-				static if(IsBuiltinType(BufferType)) {
+				toVarint(r, BufferType.msgType | (id << 3));
+				static if(BufferType.isBuiltinType) {
 					r.writeProto!BufferType(val);
 				} else {
 					CntRange cnt;
@@ -362,8 +362,8 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
-		static if(IsBuiltinType(BufferType)) {
-			if(msgdata.wireType == PACKED_MSG_TYPE && MsgType!BufferType != 2) {
+		static if(BufferType.isBuiltinType) {
+			if(msgdata.wireType == PACKED_MSG_TYPE && BufferType.msgType != 2) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
 					raw ~= myData.readProto!BufferType().to!RealType();
@@ -372,7 +372,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 				raw ~= data.readProto!BufferType().to!RealType();
 			}
 		} else {
-			enforce(msgdata.wireType == MsgType!BufferType,
+			enforce(msgdata.wireType == BufferType.msgType,
 					new DProtoException("Cannot have packed repeated message member"));
 			raw ~= ValueType(data.readProto!"bytes"());
 		}

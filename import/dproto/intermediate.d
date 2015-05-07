@@ -235,7 +235,7 @@ struct Field {
 
 		sink(requirement.to!string.capitalize());
 		sink.formattedWrite(`Buffer!(%s, "%s", `, id, type);
-		if(IsBuiltinType(type)) {
+		if(type.isBuiltinType) {
 			sink.formattedWrite(`BuffType!"%s"`, type);
 		} else {
 			sink(type);
@@ -245,12 +245,12 @@ struct Field {
 		if(requirement == Requirement.OPTIONAL) {
 			sink(", ");
 			if(auto dV = "default" in options) {
-				if(!IsBuiltinType(type)) {
+				if(!type.isBuiltinType()) {
 					sink.formattedWrite("%s.", type);
 				}
 				sink(*dV);
 			} else {
-				if(IsBuiltinType(type)) {
+				if(type.isBuiltinType()) {
 					sink.formattedWrite(`(BuffType!"%s")`, type);
 				} else {
 					sink.formattedWrite("%s", type);

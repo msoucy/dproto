@@ -3,9 +3,11 @@
  *
  * Authors: Matthew Soucy, msoucy@csh.rit.edu
  * Date: May 6, 2015
- * Version: 0.0.2
+ * Version: 1.3.0
  */
 module dproto.attributes;
+
+import std.traits;
 
 struct ProtoField
 {
