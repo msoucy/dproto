@@ -53,6 +53,7 @@ struct MessageType {
 		foreach(mt; messageTypes) mt.toString(sink, fmt);
 		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
+			sink(`mixin dproto.attributes.ProtoAccessors;`);
 			// Serialize function
 			sink("ubyte[] serialize() ");
 			sink("{ auto a = appender!(ubyte[]); serializeTo(a); return a.data; }\n");
@@ -227,7 +228,11 @@ struct Field {
 
 	void getDeclaration(scope void delegate(const(char)[]) sink) const {
 		if(requirement == Requirement.REQUIRED) {
-			sink("@(dproto.attributes.ProtoRequired)\n");
+			sink("@(dproto.attributes.Required())\n");
+		} else if(requirement == Requirement.REPEATED) {
+			if(options.get("packed", "false") != "false") {
+				sink("@(dproto.attributes.Packed())\n");
+			}
 		}
 		sink("@(dproto.attributes.ProtoField");
 		sink.formattedWrite(`("%s", %s)`, type, id);

@@ -237,6 +237,7 @@ message Person {
     assert(t.name == "");
     assert(t.id == 0);
     assert(t.phone.length == 0);
+	assert(std.algorithm.equal(t.toProto, t.serialize()));
 
     t.name = "Max Musterman";
     assert(t.name == "Max Musterman");
@@ -271,6 +272,7 @@ message Person {
 
     t.email.clean();
     assert(t.email == "");
+	assert(std.algorithm.equal(t.toProto, t.serialize()));
 }
 
 unittest

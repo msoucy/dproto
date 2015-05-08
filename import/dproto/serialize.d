@@ -105,6 +105,7 @@ void defaultDecode(R)(ulong header, ref R data)
 /*******************************************************************************
  * Maps the given type string to the wire type number
  */
+@nogc
 auto msgType(string T) {
 	switch(T) {
 		case "int32", "sint32", "uint32":

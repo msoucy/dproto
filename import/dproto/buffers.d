@@ -380,7 +380,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 }
 
-private struct CntRange
+struct CntRange
 {
 @nogc:
 	size_t cnt;
