@@ -6,7 +6,7 @@ d:
   - ldc-0.14.0
 
 before_install:
-  - dub fetch doveralls && dub build doveralls
+  - dub fetch doveralls
 
 script:
   - dub test --coverage
