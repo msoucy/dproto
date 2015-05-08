@@ -12,4 +12,4 @@ script:
   - dub test --coverage
 
 after_success:
-    ~/.dub/packages/doveralls-*/doveralls
+  - dub run doveralls
