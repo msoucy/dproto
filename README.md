@@ -3,6 +3,8 @@
 ----
 
 [![Build Status](https://travis-ci.org/msoucy/dproto.svg?branch=master)](https://travis-ci.org/msoucy/dproto)
+[![DUB](https://img.shields.io/dub/dt/dproto/latest.svg)](http://code.dlang.org/packages/dproto)
+[![DUB license](https://img.shields.io/dub/l/dproto.svg)](http://code.dlang.org/packages/dproto)
 
 Protocol buffers are a language-agnostic way of specifying message structures to allow communication and serialization.
 

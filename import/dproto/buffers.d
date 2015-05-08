@@ -108,7 +108,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			} else {
 				CntRange cnt;
 				raw.serializeTo(cnt);
-				toVarint(r, cnt);
+				toVarint(r, cnt.cnt);
 				raw.serializeTo(r);
 			}
 		}
@@ -132,7 +132,8 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
-			raw.deserialize(data);
+			auto myData = data.readProto!"bytes"();
+			raw.deserialize(myData);
 		}
 		isset = true;
 	}
@@ -201,7 +202,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			CntRange cnt;
 			raw.serializeTo(cnt);
-			toVarint(r, cnt);
+			toVarint(r, cnt.cnt);
 			raw.serializeTo(r);
 		}
 	}
@@ -222,7 +223,8 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(IsBuiltinType(BufferType)) {
 			raw = data.readProto!BufferType().to!RealType();
 		} else {
-			raw.deserialize(data);
+			auto myData = data.readProto!"bytes"();
+			raw.deserialize(myData);
 		}
 	}
 
@@ -328,7 +330,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 				foreach (ref e; raw)
 					cnt.writeProto!BufferType(e);
 				toVarint(r, PACKED_MSG_TYPE | (id << 3));
-				toVarint(r, cnt);
+				toVarint(r, cnt.cnt);
 				foreach (ref e; raw)
 					r.writeProto!BufferType(e);
 			}
@@ -340,7 +342,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 				} else {
 					CntRange cnt;
 					val.serializeTo(cnt);
-					toVarint(r, cnt);
+					toVarint(r, cnt.cnt);
 					val.serializeTo(r);
 				}
 			}
@@ -361,7 +363,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
 		static if(IsBuiltinType(BufferType)) {
-			if(msgdata.wireType == PACKED_MSG_TYPE) {
+			if(msgdata.wireType == PACKED_MSG_TYPE && MsgType!BufferType != 2) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
 					raw ~= myData.readProto!BufferType().to!RealType();

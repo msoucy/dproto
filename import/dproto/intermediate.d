@@ -72,7 +72,7 @@ struct MessageType {
 			sink("switch(msgdata.msgNum()) { ");
 			foreach(f; fields) { f.getCase(sink); }
 			/// @todo: Safely ignore unrecognized messages
-			sink("default: { defaultDecode(msgdata, data); break; } ");
+			sink("default: defaultDecode(msgdata, data); break;");
 			// Close the while and switch
 			sink("} } ");
 			// Check the required flags

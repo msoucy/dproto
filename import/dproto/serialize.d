@@ -19,6 +19,7 @@ import std.conv;
 import std.exception;
 import std.range;
 import std.system : Endian;
+import std.traits;
 
 /*******************************************************************************
  * Returns whether the given string is a protocol buffer primitive
@@ -126,8 +127,14 @@ template MsgType(string T) {
  *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
-@nogc ulong toZigZag(long src) @safe @property pure nothrow {
-	return (src << 1) ^ (src >> 63);
+@nogc Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @property
+	if(isIntegral!T && isSigned!T)
+{
+	return cast(Unsigned!T)(
+			src >= 0 ?
+				src * 2 :
+				-src * 2 - 1
+		);
 }
 
 unittest {
@@ -146,17 +153,21 @@ unittest {
  *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
-@nogc long fromZigZag(ulong src) @safe @property pure nothrow {
-	return (cast(long)(src >> 1)) ^ (cast(long)(-(src & 1)));
+@nogc Signed!T fromZigZag(T)(in T src) pure nothrow @safe @property
+	if(isIntegral!T && isUnsigned!T)
+{
+	return (src & 1) ?
+		-(src >> 1) - 1 :
+		src >> 1;
 }
 
 unittest {
-	assert(0.fromZigZag() == 0);
-	assert(1.fromZigZag() == -1);
-	assert(2.fromZigZag() == 1);
-	assert(3.fromZigZag() == -2);
-	assert(4294967294.fromZigZag() == 2147483647);
-	assert(4294967295.fromZigZag() == -2147483648);
+	assert(0U.fromZigZag() == 0);
+	assert(1U.fromZigZag() == -1);
+	assert(2U.fromZigZag() == 1);
+	assert(3U.fromZigZag() == -2);
+	assert(4294967294U.fromZigZag() == 2147483647);
+	assert(4294967295U.fromZigZag() == -2147483648);
 }
 
 /*******************************************************************************
@@ -213,21 +224,43 @@ long readVarint(R)(ref R src)
 }
 
 /*******************************************************************************
- * Encode a value into a VarInt-encoded series of bytes
+ * Encode an unsigned value into a VarInt-encoded series of bytes
  *
  * Params:
  *  	r = output range
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-void toVarint(R)(ref R r, ulong src) @property
-	if(isOutputRange!(R, ubyte))
+void toVarint(R, T)(ref R r, T src) @trusted @property
+	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
-	while(src > 0x7F) {
-		r.put(cast(ubyte)(0x80 | src&0x7F));
+	immutable ubyte maxMask = 0b_1000_0000;
+	
+	while( src >= maxMask )
+	{
+		r.put(cast(ubyte)(src | maxMask));
 		src >>= 7;
 	}
-	r.put(cast(ubyte)(src&0x7F));
+	
+	r.put(cast(ubyte) src);
+}
+
+/*******************************************************************************
+ * Encode a signed value into a VarInt-encoded series of bytes
+ *
+ * This function is useful for encode int32 and int64 value types
+ * (Do not confuse it with signed values encoded by ZigZag!)
+ *
+ * Params:
+ *  	r = output range
+ *  	src = The value to encode
+ * Returns: The created VarInt
+ */
+void toVarint(R)(ref R r, long src) @safe @property
+	if(isOutputRange!(R, ubyte))
+{
+	ulong u = src;
+	toVarint(r, u);
 }
 
 unittest {
@@ -241,28 +274,57 @@ unittest {
 	assert(equal(toVarint(3), [0x03]));
 	assert(equal(toVarint(270), [0x8E, 0x02]));
 	assert(equal(toVarint(86942), [0x9E, 0xA7, 0x05]));
+	assert(equal(toVarint(ubyte.max), [0xFF, 0x01]));
 	assert(equal(toVarint(uint.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xF]));
 	assert(equal(toVarint(ulong.max), [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
 	assert(equal(toVarint(-1), [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01]));
+	assert(toVarint(-12345).fromVarint!int == -12345);
+	assert(toVarint(int.min).fromVarint!int == int.min);
 }
 
 /*******************************************************************************
- * Decode a VarInt-encoded series of bytes into a value
+ * Decode a VarInt-encoded series of bytes into an unsigned value
  *
  * Params:
  *  	src = The data stream
  * Returns: The decoded value
  */
-long fromVarint(R)(R src) @property
-	if(isInputRange!R && is(ElementType!R : const ubyte))
+T fromVarint(T = ulong, R)(R src) @property
+	if(isInputRange!R && is(ElementType!R : const ubyte) &&
+		isIntegral!T && isUnsigned!T)
 {
-	long ret = 0L;
-	size_t offset = 0;
-	foreach(val; src) {
-		ret |= (val&0x7F)<<offset;
+	immutable ubyte mask = 0b_0111_1111;
+	T ret;
+	
+	size_t offset;
+	foreach(val; src)
+	{
+		ret |= cast(T)(val & mask) << offset;
+		
+		enforce(
+				offset < T.sizeof * 8,
+				"Varint value is too big for the type " ~ T.stringof
+			);
+		
 		offset += 7;
 	}
+	
 	return ret;
+}
+
+/*******************************************************************************
+ * Decode a VarInt-encoded series of bytes into a signed value
+ *
+ * Params:
+ *  	src = The data stream
+ * Returns: The decoded value
+ */
+T fromVarint(T, R)(R src) @property
+	if(isInputRange!R && is(ElementType!R : const ubyte) &&
+		isIntegral!T && isSigned!T)
+{
+	long r = fromVarint!ulong(src);
+	return r.to!T;
 }
 
 unittest {
@@ -274,6 +336,15 @@ unittest {
 	assert(ubs(0x03).fromVarint() == 3);
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
+	assert(ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint!int() == -1);
+	
+	bool overflow = false;
+	try
+		ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint();
+	catch(Exception)
+		overflow = true;
+	finally
+		assert(overflow);
 }
 
 /// The type to encode an enum as

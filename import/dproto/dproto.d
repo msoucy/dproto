@@ -535,7 +535,63 @@ unittest
 	auto proto_struct = ParseProtoSchema("<none>", proto_src);
 	auto d_src = proto_struct.toD;
 	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
-	       "Mixin string should not have two double quotes " ~ d_src);
+		   "Mixin string should not have two double quotes " ~ d_src);
 	assert(proto_src == proto_struct.toProto.strip,
-	       "Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
+		   "Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!`
+	enum RecordFlags
+	{
+		Announce = 1;
+		Cancel = 2;
+		SomeAnotherFlag = 4; // look at the enumeration!
+	}
+	message KeyValue
+	{
+		required bytes key = 1;
+		optional RecordFlags flags = 2;
+		optional bytes payload = 3;
+	}
+	message ECDSASignature
+	{
+		required bytes signature = 1;
+		required bytes pubKey = 2;
+	}
+	message Signed
+	{
+		required ECDSASignature esignature = 1;
+		required KeyValue keyValue = 2;
+	}`;
+
+	Signed d1;
+	d1.keyValue.key = cast(ubyte[]) "key data";
+	d1.keyValue.payload = cast(ubyte[]) "value data";
+	auto ser = d1.serialize();
+	Signed d2 = ser;
+	assert(d1.keyValue.key == d2.keyValue.key);
+	assert(d1.keyValue.payload == d2.keyValue.payload);
+}
+
+unittest
+{
+
+	mixin ProtocolBufferFromString!`
+		message DNSPayload
+		{
+			repeated bytes assignOwnerPubKeys = 1;
+			repeated bytes assignManagersPubKeys = 2;
+
+			repeated bytes ns = 3;
+		}
+	`;
+
+	DNSPayload p1;
+	p1.ns ~= [1, 2, 3];
+	auto buf = p1.serialize();
+
+	DNSPayload p2;
+	p2.deserialize(buf);
 }
