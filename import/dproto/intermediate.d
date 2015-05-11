@@ -55,8 +55,6 @@ struct MessageType {
 		if(fmt.spec != 'p') {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
 			// Serialize function
-			sink("ubyte[] serialize() ");
-			sink("{ auto a = appender!(ubyte[]); serializeTo(a); return a.data; }\n");
 			sink("void serializeTo(R)(ref R r)\n");
 			sink("if(isOutputRange!(R, ubyte)) { ");
 			foreach(f; fields) {
@@ -84,9 +82,7 @@ struct MessageType {
 				sink.formattedWrite(`"Did not receive expected input \"%s\""));`, f.name);
 				sink("\n");
 			}
-			sink("}\nthis(R)(auto ref R data)\n");
-			sink("if(isInputRange!R && is(ElementType!R : const ubyte))");
-			sink("{ deserialize(data); }\n");
+			sink("}\n");
 		}
 		sink("}\n");
 	}

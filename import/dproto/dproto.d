@@ -237,7 +237,7 @@ message Person {
     assert(t.name == "");
     assert(t.id == 0);
     assert(t.phone.length == 0);
-	assert(std.algorithm.equal(t.toProto, t.serialize()));
+	assert(t.testProto);
 
     t.name = "Max Musterman";
     assert(t.name == "Max Musterman");
@@ -272,7 +272,7 @@ message Person {
 
     t.email.clean();
     assert(t.email == "");
-	assert(std.algorithm.equal(t.toProto, t.serialize()));
+	assert(t.testProto);
 }
 
 unittest
@@ -330,6 +330,7 @@ unittest
 
 	t.email.clean();
 	assert(t.email == "");
+	assert(t.testProto);
 
 	AddressBook addressbook;
 	assert(addressbook.person.length == 0);
@@ -338,6 +339,7 @@ unittest
 	assert(addressbook.person[0] == t);
 	assert(addressbook.person[0] == addressbook.person[1]);
 	assert(addressbook.person.length == 2);
+	assert(addressbook.testProto);
 }
 
 unittest
@@ -386,7 +388,7 @@ message AddressBook {
 
 	ubyte[] serializedObject = addressbook.serialize();
 
-	AddressBook addressbook2 = AddressBook(serializedObject);
+	AddressBook addressbook2 = AddressBook.fromProto(serializedObject);
 	assert(addressbook2.person.length == 2);
 	foreach (t2; addressbook2.person[0..1])
 	{
@@ -524,6 +526,7 @@ message Person {
 	p.deserialize(val);
 	assert(val.length == 0);
 	assert(p.name == "abc");
+	assert(p.testProto);
 }
 
 unittest
@@ -575,6 +578,7 @@ unittest
 	Signed d2 = ser;
 	assert(d1.keyValue.key == d2.keyValue.key);
 	assert(d1.keyValue.payload == d2.keyValue.payload);
+	assert(d1.testProto);
 }
 
 unittest
@@ -596,4 +600,5 @@ unittest
 
 	DNSPayload p2;
 	p2.deserialize(buf);
+	assert(p2.testProto());
 }

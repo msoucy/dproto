@@ -1,6 +1,9 @@
 language: d
 d:
-  - dmd-2.066.1
+  - dmd
   - dmd-2.067.0
+  - dmd-2.066.1
+  - gdc
   - gdc-4.9.0
+  - ldc
   - ldc-0.14.0

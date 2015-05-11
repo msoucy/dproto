@@ -72,7 +72,42 @@ alias Id(alias T) = T;
 
 template ProtoAccessors()
 {
-	ubyte[] toProto()
+
+	static auto fromProto(R)(auto ref R data)
+		if(isProtoInputRange!R)
+	{
+		auto ret = typeof(this)();
+		ret.deserialize(data);
+		return ret;
+	}
+
+	public this(R)(auto ref R data)
+		if(isProtoInputRange!R)
+	{
+		deserialize(data);
+	}
+
+	ubyte[] serialize()
+	{
+		auto a = appender!(ubyte[]);
+		serializeTo(a);
+		return a.data;
+	}
+
+	bool testProto()
+	{
+		import std.algorithm : equal;
+		import std.stdio;
+		if(!equal(toProto(), serialize())) {
+			"testProto failed for %s".writefln(this);
+			"-- [%(0x%02X, %)]".writefln(toProto);
+			"-- [%(0x%02X, %)]".writefln(serialize);
+			return false;
+		}
+		return true;
+	}
+
+	ubyte[] toProto() const
 	{
 		import std.array : appender;
 		auto a = appender!(ubyte[]);
