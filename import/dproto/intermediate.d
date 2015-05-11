@@ -53,9 +53,9 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
 			// Serialize function
-			sink("ubyte[] serialize() ");
+			sink("ubyte[] serialize() const");
 			sink("{ auto a = appender!(ubyte[]); serializeTo(a); return a.data; }\n");
-			sink("void serializeTo(R)(ref R r)\n");
+			sink("void serializeTo(R)(ref R r) const\n");
 			sink("if(isOutputRange!(R, ubyte)) { ");
 			foreach(f; fields) {
 				sink.formattedWrite("%s.serializeTo(r);\n", f.name);

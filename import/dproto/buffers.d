@@ -93,12 +93,12 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data, or an empty array if the buffer is not set
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		if(isset) {
@@ -188,12 +188,12 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		toVarint(r, MsgType!BufferType | (id << 3));
@@ -314,12 +314,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(packed) {
