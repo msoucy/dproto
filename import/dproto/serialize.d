@@ -356,6 +356,16 @@ enum ENUM_SERIALIZATION = "int32";
 enum PACKED_MSG_TYPE = 2;
 
 /*******************************************************************************
+ * Test a range for being a valid ProtoBuf input range
+ *
+ * Params:
+ *     R = type to test
+ * Returns: The value
+ */
+
+enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
+
+/*******************************************************************************
  * Decode a series of bytes into a value
  *
  * Params:
@@ -402,14 +412,24 @@ BuffType!T readProto(string T, R)(ref R src)
 }
 
 /*******************************************************************************
+ * Test a range for being a valid ProtoBuf output range
+ *
+ * Params:
+ *     R = type to test
+ * Returns: The value
+ */
+
+enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
+
+/*******************************************************************************
  * Encode a value into a series of bytes
  *
  * Params:
  *     r = output range
- *  	src = The raw data
+ *     src = The raw data
  * Returns: The encoded value
  */
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
 {
@@ -417,7 +437,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "sint32" || T == "sint64"))
 {
@@ -425,7 +445,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
 		T == "float" || T == "fixed32" || T == "sfixed32"))
@@ -434,7 +454,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isOutputRange!(R, ubyte) &&
 	   (T == "string" || T == "bytes"))
 {

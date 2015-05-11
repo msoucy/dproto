@@ -80,7 +80,7 @@ template ProtoAccessors()
 		return a.data;
 	}
 
-	void toProto(R)(R r)
+	void toProto(R)(R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		import dproto.attributes;
@@ -92,7 +92,7 @@ template ProtoAccessors()
 		}
 	}
 
-	private void toProtoField(string f, R)(R r)
+	private void toProtoField(string f, R)(R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		import dproto.attributes;
@@ -117,7 +117,7 @@ template ProtoAccessors()
 		}
 	}
 
-	void serializeProto(dproto.attributes.ProtoField fieldData, T, R)(T data, R r)
+	void serializeProto(dproto.attributes.ProtoField fieldData, T, R)(T data, R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(is(T : const string)) {
