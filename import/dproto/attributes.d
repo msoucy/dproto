@@ -8,7 +8,6 @@
 module dproto.attributes;
 
 import dproto.serialize;
-import std.traits;
 
 // nogc compat shim using UDAs (@nogc must appear as function prefix)
 static if (__VERSION__ < 2066) enum nogc;
@@ -87,45 +86,23 @@ template ProtoAccessors()
 		deserialize(data);
 	}
 
-	ubyte[] serialize()
+	ubyte[] serialize() const
 	{
+		import std.array : appender;
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
 
-	bool testProto()
-	{
-		import std.algorithm : equal;
-		import std.stdio;
-		auto r_toProto = toProto();
-		auto r_serialize = serialize();
-		if(!equal(r_toProto, r_serialize)) {
-			"testProto failed for %s".writefln(this);
-			"-- [%(0x%02X, %)]".writefln(r_toProto);
-			"-- [%(0x%02X, %)]".writefln(r_serialize);
-			return false;
-		}
-		return true;
-	}
-
-	ubyte[] toProto() const
-	{
-		import std.array : appender;
-		auto a = appender!(ubyte[]);
-		toProto(a);
-		return a.data;
-	}
-
-	void toProto(R)(ref R r) const
+	void serializeTo(R)(ref R r) const
 		if(isProtoOutputRange!R)
 	{
 		import dproto.attributes;
 		import std.traits;
 		foreach(member; FieldNameTuple!(typeof(this))) {
-			alias field = Id!(__traits(getMember, typeof(this), member));
+			alias field = Id!(__traits(getMember, this, member));
 			static if(hasValueAnnotation!(field, ProtoField)) {
-				toProtoField!field(r);
+				serializeField!field(r);
 			}
 		}
 	}
@@ -144,7 +121,7 @@ template protoDefault(T) {
 	}
 }
 
-void toProtoField(alias field, R)(ref R r) const
+void serializeField(alias field, R)(ref R r) const
 	if(isProtoOutputRange!R)
 {
 	alias fieldType = typeof(field.opGet);
@@ -164,30 +141,27 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 	static if(is(T : const string)) {
 		r.toVarint(fieldData.header);
 		r.writeProto!"string"(data);
-	}
-	else static if(is(T : const(ubyte)[])) {
+	} else static if(is(T : const(ubyte)[])) {
 		r.toVarint(fieldData.header);
 		r.writeProto!"bytes"(data);
-	}
-	else static if(is(T : const(T)[], T)) {
+	} else static if(is(T : const(T)[], T)) {
 		// TODO: implement packed
 		foreach(val; data) {
 			serializeProto!fieldData(val, r);
 		}
-	}
-	else static if(fieldData.wireType.isBuiltinType) {
+	} else static if(fieldData.wireType.isBuiltinType) {
 		r.toVarint(fieldData.header);
 		enum wt = fieldData.wireType;
 		r.writeProto!(wt)(data);
 	} else static if(is(T == enum)) {
 		r.toVarint(ENUM_SERIALIZATION.msgType | (fieldData.fieldNumber << 3));
 		r.writeProto!ENUM_SERIALIZATION(data);
-	} else static if(__traits(compiles, data.toProto)) {
+	} else static if(__traits(compiles, data.serialize())) {
 		r.toVarint(fieldData.header);
 		dproto.buffers.CntRange cnt;
-		data.toProto(cnt);
+		data.serializeTo(cnt);
 		r.toVarint(cnt.cnt);
-		data.toProto(r);
+		data.serializeTo(r);
 	} else {
 		static assert(0, "Unknown serialization");
 	}

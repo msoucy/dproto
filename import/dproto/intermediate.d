@@ -58,13 +58,6 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
-			// Serialize function
-			sink("void serializeTo(R)(ref R r)\n");
-			sink("if(isOutputRange!(R, ubyte)) { ");
-			foreach(f; fields) {
-				sink.formattedWrite("%s.serializeTo(r);\n", f.name);
-			}
-			sink("}\n");
 			// Deserialize function
 			sink("void deserialize(R)(auto ref R data)\n");
 			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
