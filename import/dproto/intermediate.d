@@ -87,13 +87,6 @@ struct MessageType {
 		sink("}\n");
 	}
 
-	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
-	{
-		auto fullname = prefix ~ name ~ ".";
-		foreach(e; enumTypes) e.writeFuncs(fullname, sink);
-		foreach(m; messageTypes) m.writeFuncs(fullname, sink);
-	}
-
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -119,16 +112,6 @@ struct EnumType {
 			sink.formattedWrite("%s = %s%s", key, val, suffix);
 		}
 		sink("}\n");
-	}
-
-	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
-	{
-		auto fullname = prefix ~ name;
-		sink(fullname);
-		sink(" readProto(string T, R)(ref R src)\n");
-		sink.formattedWrite(`if(T == "%s" && `, fullname);
-		sink(`(isInputRange!R && is(ElementType!R : const ubyte)))`);
-		sink.formattedWrite("{ return src.readVarint().to!(%s)(); }\n", fullname);
 	}
 
 	string toD() @property const { return "%s".format(this); }
@@ -179,9 +162,6 @@ struct ProtoPackage {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
-		} else {
-			foreach(e; enumTypes) e.writeFuncs("", sink);
-			foreach(m; messageTypes) m.writeFuncs("", sink);
 		}
 	}
 

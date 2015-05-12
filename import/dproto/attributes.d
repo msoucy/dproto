@@ -116,7 +116,7 @@ template ProtoAccessors()
 	}
 
 	void toProto(R)(R r) const
-		if(isOutputRange!(R, ubyte))
+		if(isProtoOutputRange!R)
 	{
 		import dproto.attributes;
 		import std.traits;
@@ -128,7 +128,7 @@ template ProtoAccessors()
 	}
 
 	private void toProtoField(string f, R)(R r) const
-		if(isOutputRange!(R, ubyte))
+		if(isProtoOutputRange!R)
 	{
 		import dproto.attributes;
 		alias field = Id!(__traits(getMember, typeof(this), f));
