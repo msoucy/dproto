@@ -24,8 +24,12 @@ struct Options {
 	alias raw this;
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
-		if(!raw.length) return;
-		sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
+		if(fmt.spec == 'p') {
+			if(!raw.length) return;
+			sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
+		} else {
+			sink.formattedWrite("[%(%s : %s, %)]", raw);
+		}
 	}
 }
 
@@ -211,7 +215,7 @@ struct Field {
 			}
 		}
 		sink("@(dproto.attributes.ProtoField");
-		sink.formattedWrite(`("%s", %s)`, type, id);
+		sink.formattedWrite(`("%s", %s, %s)`, type, id, options);
 		sink(")\n");
 
 		sink(requirement.to!string.capitalize());

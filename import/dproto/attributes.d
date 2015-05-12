@@ -18,8 +18,9 @@ struct ProtoField
 {
 	string wireType;
 	uint fieldNumber;
+	string[string] options;
 	@disable this();
-	this(string w, uint f) {
+	this(string w, uint f, string[string] opts) {
 		wireType = w;
 		fieldNumber = f;
 	}
@@ -29,7 +30,6 @@ struct ProtoField
 }
 
 struct Required {}
-struct Packed {}
 
 template hasValueAnnotation(alias f, Attr)
 {

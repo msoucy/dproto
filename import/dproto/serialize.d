@@ -106,7 +106,7 @@ void defaultDecode(R)(ulong header, ref R data)
  * Maps the given type string to the wire type number
  */
 @nogc
-auto msgType(string T) {
+auto msgType(string T) pure nothrow @safe {
 	switch(T) {
 		case "int32", "sint32", "uint32":
 		case "int64", "sint64", "uint64":
@@ -373,33 +373,29 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
  * Returns: The decoded value
  */
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
-{
-	return src.readVarint().to!(BuffType!T)();
-}
-
-/// Ditto
-BuffType!T readProto(string T, R)(ref R src)
-	if((T == "sint32" || T == "sint64")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && (T == "sint32" || T == "sint64"))
 {
 	return src.readVarint().fromZigZag().to!(BuffType!T)();
 }
 
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "double" || T == "fixed64" || T == "sfixed64" ||
-		T == "float" || T == "fixed32" || T == "sfixed32")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && T.msgType == "int32".msgType)
+{
+	return src.readVarint().to!(BuffType!T)();
+}
+
+/// Ditto
+BuffType!T readProto(string T, R)(ref R src)
+	if(isProtoInputRange!R &&
+	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
 
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "string" || T == "bytes")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && T.msgType == "string".msgType)
 {
 	BuffType!T ret;
 	auto len = src.readProto!"uint32"();
@@ -430,33 +426,29 @@ enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
  * Returns: The encoded value
  */
 void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
-	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
-{
-	toVarint(r, src);
-}
-
-/// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
-	   (T == "sint32" || T == "sint64"))
+	if(isProtoOutputRange!R && (T == "sint32" || T == "sint64"))
 {
 	toVarint(r, src.toZigZag);
 }
 
 /// Ditto
 void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
-	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
-		T == "float" || T == "fixed32" || T == "sfixed32"))
+	if(isProtoOutputRange!R && T.msgType == "int32".msgType)
+{
+	toVarint(r, src);
+}
+
+/// Ditto
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R &&
+	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
 	r.put(src.nativeToLittleEndian!(BuffType!T)[]);
 }
 
 /// Ditto
 void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
-	   (T == "string" || T == "bytes"))
+	if(isProtoOutputRange!R && T.msgType == "string".msgType)
 {
 	toVarint(r, src.length);
 	r.put(cast(ubyte[])src);
