@@ -386,5 +386,4 @@ struct CntRange
 	size_t cnt;
 	void put(in ubyte) { ++cnt; }
 	void put(in ubyte[] ary) { cnt += ary.length; }
-	alias cnt this;
 }

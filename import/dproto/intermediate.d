@@ -28,7 +28,7 @@ struct Options {
 			if(!raw.length) return;
 			sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
 		} else {
-			sink.formattedWrite("[%(%s : %s, %)]", raw);
+			sink.formattedWrite(`["dprotoGenerated": "true"%(, %s : %s%)]`, raw);
 		}
 	}
 }
