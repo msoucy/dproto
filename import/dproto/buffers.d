@@ -88,31 +88,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
-	/***************************************************************************
-	 * Serialize the buffer
-	 *
-	 * Returns: The proto-encoded data, or an empty array if the buffer is not set
-	 */
-	ubyte[] serialize() {
-		auto a = appender!(ubyte[]);
-		serializeTo(a);
-		return a.data;
-	}
-	void serializeTo(R)(ref R r)
-		if(isOutputRange!(R, ubyte))
-	{
-		if(isset) {
-			toVarint(r, BufferType.msgType | (id << 3));
-			static if(BufferType.isBuiltinType) {
-				r.writeProto!BufferType(raw);
-			} else {
-				CntRange cnt;
-				raw.serializeTo(cnt);
-				toVarint(r, cnt.cnt);
-				raw.serializeTo(r);
-			}
-		}
-	}
+
 	/***************************************************************************
 	 * Deserialize data into a buffer
 	 *
@@ -183,29 +159,6 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	alias opGet this;
 
 
-	/***************************************************************************
-	 * Serialize the buffer
-	 *
-	 * Returns: The proto-encoded data
-	 */
-	ubyte[] serialize() {
-		auto a = appender!(ubyte[]);
-		serializeTo(a);
-		return a.data;
-	}
-	void serializeTo(R)(ref R r)
-		if(isOutputRange!(R, ubyte))
-	{
-		toVarint(r, BufferType.msgType | (id << 3));
-		static if(BufferType.isBuiltinType) {
-			r.writeProto!BufferType(raw);
-		} else {
-			CntRange cnt;
-			raw.serializeTo(cnt);
-			toVarint(r, cnt.cnt);
-			raw.serializeTo(r);
-		}
-	}
 	/***************************************************************************
 	 * Deserialize data into a buffer
 	 *
@@ -306,48 +259,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		return raw.length;
 	}
 
-	/***************************************************************************
-	 * Serialize the buffer
-	 *
-	 * If the buffer is marked as packed and the type is primitive,
-	 * then it will attempt to pack the data.
-	 *
-	 * Returns: The proto-encoded data
-	 */
-	ubyte[] serialize() {
-		auto a = appender!(ubyte[]);
-		serializeTo(a);
-		return a.data;
-	}
-	void serializeTo(R)(ref R r)
-		if(isOutputRange!(R, ubyte))
-	{
-		static if(packed) {
-			static assert(BufferType.isBuiltinType,
-					"Cannot have packed repeated message member");
-			if(raw.length) {
-				CntRange cnt;
-				foreach (ref e; raw)
-					cnt.writeProto!BufferType(e);
-				toVarint(r, PACKED_MSG_TYPE | (id << 3));
-				toVarint(r, cnt.cnt);
-				foreach (ref e; raw)
-					r.writeProto!BufferType(e);
-			}
-		} else {
-			foreach(val; raw) {
-				toVarint(r, BufferType.msgType | (id << 3));
-				static if(BufferType.isBuiltinType) {
-					r.writeProto!BufferType(val);
-				} else {
-					CntRange cnt;
-					val.serializeTo(cnt);
-					toVarint(r, cnt.cnt);
-					val.serializeTo(r);
-				}
-			}
-		}
-	}
+
 	/***************************************************************************
 	 * Deserialize data into a buffer
 	 *
