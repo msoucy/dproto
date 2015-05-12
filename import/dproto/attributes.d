@@ -175,20 +175,20 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 			serializeProto!fieldData(val, r);
 		}
 	}
-	else {
+	else static if(fieldData.wireType.isBuiltinType) {
 		r.toVarint(fieldData.header);
-		static if(fieldData.wireType.isBuiltinType) {
-			enum wt = fieldData.wireType;
-			r.writeProto!(wt)(data);
-		} else static if(is(T == enum)) {
-			r.writeProto!ENUM_SERIALIZATION(data);
-		} else static if(__traits(compiles, data.toProto)) {
-			dproto.buffers.CntRange cnt;
-			data.toProto(cnt);
-			r.toVarint(cnt.cnt);
-			data.toProto(r);
-		} else {
-			static assert(0, "Unknown serialization");
-		}
+		enum wt = fieldData.wireType;
+		r.writeProto!(wt)(data);
+	} else static if(is(T == enum)) {
+		r.toVarint(ENUM_SERIALIZATION.msgType | (fieldData.fieldNumber << 3));
+		r.writeProto!ENUM_SERIALIZATION(data);
+	} else static if(__traits(compiles, data.toProto)) {
+		r.toVarint(fieldData.header);
+		dproto.buffers.CntRange cnt;
+		data.toProto(cnt);
+		r.toVarint(cnt.cnt);
+		data.toProto(r);
+	} else {
+		static assert(0, "Unknown serialization");
 	}
 }
