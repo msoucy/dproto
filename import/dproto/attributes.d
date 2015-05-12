@@ -29,6 +29,7 @@ struct ProtoField
 }
 
 struct Required {}
+struct Packed {}
 
 template hasValueAnnotation(alias f, Attr)
 {
@@ -80,29 +81,29 @@ template ProtoAccessors()
 		return ret;
 	}
 
-	public this(R)(auto ref R data)
+	public this(R)(auto ref R __data)
 		if(isProtoInputRange!R)
 	{
-		deserialize(data);
+		deserialize(__data);
 	}
 
 	ubyte[] serialize() const
 	{
 		import std.array : appender;
-		auto a = appender!(ubyte[]);
-		serializeTo(a);
-		return a.data;
+		auto __a = appender!(ubyte[]);
+		serializeTo(__a);
+		return __a.data;
 	}
 
-	void serializeTo(R)(ref R r) const
+	void serializeTo(R)(ref R __r) const
 		if(isProtoOutputRange!R)
 	{
 		import dproto.attributes;
 		import std.traits;
-		foreach(member; FieldNameTuple!(typeof(this))) {
-			alias field = Id!(__traits(getMember, this, member));
-			static if(hasValueAnnotation!(field, ProtoField)) {
-				serializeField!field(r);
+		foreach(__member; FieldNameTuple!(typeof(this))) {
+			alias __field = Id!(__traits(getMember, this, __member));
+			static if(hasValueAnnotation!(__field, ProtoField)) {
+				serializeField!__field(__r);
 			}
 		}
 	}

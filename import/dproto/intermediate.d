@@ -60,7 +60,7 @@ struct MessageType {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
 			// Deserialize function
 			sink("void deserialize(R)(auto ref R data)\n");
-			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
+			sink("if(isProtoInputRange!R) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite("bool %s_isset = false;\n", f.name);
 			}
