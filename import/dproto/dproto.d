@@ -526,6 +526,17 @@ message Person {
 
 unittest
 {
+    mixin ProtocolBufferFromString!"
+message Field_Name_Equals_Internal_Variable_Name {
+  required int32 r = 1;
+  required int32 data = 2;
+  required int32 msgdata = 3;
+}
+";
+}
+
+unittest
+{
 	import dproto.buffers;
 	import dproto.exception;
 	import dproto.serialize;
