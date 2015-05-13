@@ -208,7 +208,7 @@ struct Field {
 			}
 		}
 		sink("@(dproto.attributes.ProtoField");
-		sink.formattedWrite(`("%s", %s, %s)`, type, id, options);
+		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
 		sink(requirement.to!string.capitalize());

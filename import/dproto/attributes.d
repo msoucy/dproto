@@ -17,9 +17,8 @@ struct ProtoField
 {
 	string wireType;
 	ubyte fieldNumber;
-	string[string] options;
 	@disable this();
-	this(string w, ubyte f, string[string] opts) {
+	this(string w, ubyte f) {
 		wireType = w;
 		fieldNumber = f;
 	}
@@ -132,7 +131,13 @@ void serializeField(alias field, R)(ref R r) const
 		needsToSerialize = field != protoDefault!fieldType;
 	}
 	if(needsToSerialize) {
-		serializeProto!fieldData(field.opGet, r);
+		static if(hasValueAnnotation!(field, Packed)
+				&& is(fieldType : T[], T)
+				&& (is(T == enum) || fieldData.wireType.isBuiltinType)) {
+			serializePackedProto!fieldData(field.opGet, r);
+		} else {
+			serializeProto!fieldData(field.opGet, r);
+		}
 	}
 }
 
@@ -146,7 +151,6 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 		r.toVarint(fieldData.header);
 		r.writeProto!"bytes"(data);
 	} else static if(is(T : const(T)[], T)) {
-		// TODO: implement packed
 		foreach(val; data) {
 			serializeProto!fieldData(val, r);
 		}
@@ -165,5 +169,26 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 		data.serializeTo(r);
 	} else {
 		static assert(0, "Unknown serialization");
+	}
+}
+
+void serializePackedProto(ProtoField fieldData, T, R)(const T data, ref R r)
+	if(isProtoOutputRange!R)
+{
+	static assert(fieldData.wireType.isBuiltinType,
+			"Cannot have packed repeated message");
+	if(data.length) {
+		dproto.buffers.CntRange cnt;
+		static if(is(T == enum)) {
+			enum wt = ENUM_SERIALIZATION.msgType;
+		} else {
+			enum wt = fieldData.wireType;
+		}
+		foreach (ref e; data)
+			cnt.writeProto!wt(e);
+		toVarint(r, PACKED_MSG_TYPE | (fieldData.fieldNumber << 3));
+		toVarint(r, cnt.cnt);
+		foreach (ref e; data)
+			r.writeProto!wt(e);
 	}
 }
