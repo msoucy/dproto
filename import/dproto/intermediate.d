@@ -54,25 +54,25 @@ struct MessageType {
 		if(fmt.spec != 'p') {
 			// Serialize function
 			sink("ubyte[] serialize() const");
-			sink("{ auto a = appender!(ubyte[]); serializeTo(a); return a.data; }\n");
-			sink("void serializeTo(R)(ref R r) const\n");
+			sink("{ auto __a = appender!(ubyte[]); serializeTo(__a); return __a.data; }\n");
+			sink("void serializeTo(R)(ref R __r) const\n");
 			sink("if(isOutputRange!(R, ubyte)) { ");
 			foreach(f; fields) {
-				sink.formattedWrite("%s.serializeTo(r);\n", f.name);
+				sink.formattedWrite("%s.serializeTo(__r);\n", f.name);
 			}
 			sink("}\n");
 			// Deserialize function
-			sink("void deserialize(R)(auto ref R data)\n");
+			sink("void deserialize(R)(auto ref R __data)\n");
 			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
 			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
 				sink.formattedWrite("bool %s_isset = false;\n", f.name);
 			}
-			sink("while(!data.empty) { ");
-			sink("auto msgdata = data.readVarint();\n");
-			sink("switch(msgdata.msgNum()) { ");
+			sink("while(!__data.empty) { ");
+			sink("auto __msgdata = __data.readVarint();\n");
+			sink("switch(__msgdata.msgNum()) { ");
 			foreach(f; fields) { f.getCase(sink); }
 			/// @todo: Safely ignore unrecognized messages
-			sink("default: defaultDecode(msgdata, data); break;");
+			sink("default: defaultDecode(__msgdata, __data); break;");
 			// Close the while and switch
 			sink("} } ");
 			// Check the required flags
@@ -82,9 +82,9 @@ struct MessageType {
 				sink.formattedWrite(`"Did not receive expected input \"%s\""));`, f.name);
 				sink("\n");
 			}
-			sink("}\nthis(R)(auto ref R data)\n");
+			sink("}\nthis(R)(auto ref R __data)\n");
 			sink("if(isInputRange!R && is(ElementType!R : const ubyte))");
-			sink("{ deserialize(data); }\n");
+			sink("{ deserialize(__data); }\n");
 		}
 		sink("}\n");
 	}
@@ -260,7 +260,7 @@ struct Field {
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);
-		sink.formattedWrite("%s.deserialize(msgdata, data);\n", name);
+		sink.formattedWrite("%s.deserialize(__msgdata, __data);\n", name);
 		if(requirement == Requirement.REQUIRED) {
 			sink.formattedWrite("%s_isset = true;\n", name);
 		}
