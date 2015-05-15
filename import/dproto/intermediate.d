@@ -58,28 +58,6 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 		if(fmt.spec != 'p') {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
-			// Deserialize function
-			sink("void deserialize(R)(auto ref R data)\n");
-			sink("if(isProtoInputRange!R) {");
-			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				sink.formattedWrite("bool %s_isset = false;\n", f.name);
-			}
-			sink("while(!data.empty) { ");
-			sink("auto msgdata = data.readVarint();\n");
-			sink("switch(msgdata.msgNum()) { ");
-			foreach(f; fields) { f.getCase(sink); }
-			/// @todo: Safely ignore unrecognized messages
-			sink("default: defaultDecode(msgdata, data); break;");
-			// Close the while and switch
-			sink("} } ");
-			// Check the required flags
-			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				sink.formattedWrite(`enforce(%s_isset, `, f.name);
-				sink.formattedWrite(`new DProtoException(`);
-				sink.formattedWrite(`"Did not receive expected input \"%s\""));`, f.name);
-				sink("\n");
-			}
-			sink("}\n");
 		}
 		sink("}\n");
 	}

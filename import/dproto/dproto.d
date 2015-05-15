@@ -594,4 +594,5 @@ unittest
 
 	DNSPayload p2;
 	p2.deserialize(buf);
+	assert(p1 == p2);
 }

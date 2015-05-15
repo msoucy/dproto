@@ -99,7 +99,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * 		data	=	The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R : const ubyte))
+		if(isProtoInputRange!R)
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -167,7 +167,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R : const ubyte))
+		if(isProtoInputRange!R)
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));
@@ -270,7 +270,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *  	data    = The data to decode
 	 */
 	void deserialize(R)(long msgdata, ref R data)
-		if(isInputRange!R && is(ElementType!R : const ubyte))
+		if(isProtoInputRange!R)
 	{
 		enforce(msgdata.msgNum() == id,
 				new DProtoException("Incorrect message number"));

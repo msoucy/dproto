@@ -99,14 +99,45 @@ template ProtoAccessors()
 	{
 		import dproto.attributes;
 		import std.traits;
-		foreach(__member; FieldNameTuple!(typeof(this))) {
+		foreach(__member; ProtoFields!this) {
 			alias __field = Id!(__traits(getMember, this, __member));
-			static if(hasValueAnnotation!(__field, ProtoField)) {
-				serializeField!__field(__r);
+			serializeField!__field(__r);
+		}
+	}
+
+	void deserialize(R)(auto ref R __r)
+		if(isProtoInputRange!R)
+	{
+		import dproto.attributes;
+		import std.traits;
+		while(!__r.empty()) {
+			auto __msgdata = __r.readVarint();
+			bool __matched = false;
+			foreach(__member; ProtoFields!this) {
+				alias __field = Id!(__traits(getMember, this, __member));
+				alias __fieldData = getAnnotation!(__field, ProtoField);
+				if(__msgdata.msgNum == __fieldData.fieldNumber) {
+					__field.deserialize(__msgdata, __r);
+					__matched = true;
+				}
+			}
+			if(!__matched) {
+				defaultDecode(__msgdata, __r);
 			}
 		}
 	}
 
+}
+
+template ProtoFields(alias self) {
+	import std.traits;
+	import std.typetuple;
+	alias T = typeof(self);
+	template HasProtoField(alias F) {
+		alias __field = Id!(__traits(getMember, self, F));
+		alias HasProtoField = hasValueAnnotation!(__field, ProtoField);
+	}
+	alias ProtoFields = Filter!(HasProtoField, FieldNameTuple!T);
 }
 
 template protoDefault(T) {
@@ -131,8 +162,7 @@ void serializeField(alias field, R)(ref R r) const
 		needsToSerialize = field != protoDefault!fieldType;
 	}
 	if(needsToSerialize) {
-		static if(hasValueAnnotation!(field, Packed)
-				&& is(fieldType : T[], T)
+		static if(hasValueAnnotation!(field, Packed) && is(fieldType : T[], T)
 				&& (is(T == enum) || fieldData.wireType.isBuiltinType)) {
 			serializePackedProto!fieldData(field.opGet, r);
 		} else {
