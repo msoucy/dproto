@@ -4,14 +4,15 @@
  * Provides accessors for D string and D structs from proto files/data
  *
  * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Oct 5, 2013
- * Version: 0.0.2
+ * Date: Apr 1, 2015
+ * Version: 0.0.3
  */
 module dproto.dproto;
 
 import std.exception : enforce;
 import std.array;
 import std.range;
+
 
 /*******************************************************************************
  * Create D structures from proto file
@@ -22,11 +23,7 @@ import std.range;
  */
 template ProtocolBuffer(string s)
 {
-	import dproto.buffers;
-	import dproto.exception;
-	import dproto.serialize;
-	import dproto.parse;
-	import std.range;
+	import dproto.imports;
 	mixin(ParseProtoSchema(s,import(s)).toD());
 }
 
@@ -37,13 +34,31 @@ template ProtocolBuffer(string s)
  */
 template ProtocolBufferFromString(string s)
 {
-	import dproto.buffers;
-	import dproto.exception;
-	import dproto.serialize;
-	import dproto.parse;
-	import std.range;
+	import dproto.imports;
 	mixin(ParseProtoSchema("<none>",s).toD());
 }
+
+template ProtocolBufferInterface(string s) {
+	import dproto.imports;
+	mixin("%3.1s".format(ParseProtoSchema("<none>",s)));
+}
+
+template ProtocolBufferRpc(string s) {
+	import dproto.imports;
+	mixin("%3.2s".format(ParseProtoSchema("<none>",s)));
+}
+
+template ProtocolBufferImpl(string s) {
+	import dproto.imports;
+	mixin("%3.3s".format(ParseProtoSchema("<none>",s)));
+}
+
+template ProtocolBufferStruct(string s) {
+	import dproto.imports;
+	mixin("%-3.1s".format(ParseProtoSchema("<none>",s)));
+}
+
+
 
 unittest
 {
@@ -212,6 +227,43 @@ unittest
 
 unittest
 {
+	enum serviceDefinition = "
+	message ServiceRequest {
+		string request = 1;
+	}
+	message ServiceResponse {
+		string response = 1;
+	}
+	service TestService {
+		rpc TestMethod (ServiceRequest) returns (ServiceResponse);
+	}
+	";
+
+	assert(__traits(compiles, ProtocolBufferFromString!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferInterface!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferRpc!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferImpl!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferStruct!serviceDefinition));
+
+	// Example from README.md.
+	mixin ProtocolBufferInterface!serviceDefinition;
+
+	class ServiceImplementation : TestService {
+		ServiceResponse TestMethod(ServiceRequest input) {
+			ServiceResponse output;
+			output.response = "received: " ~ input.request;
+			return output;
+		}
+	}
+	auto serviceTest = new ServiceImplementation;
+	ServiceRequest input;
+	input.request = "message";
+	assert(serviceTest.TestMethod(input).response == "received: message");
+
+}
+
+unittest
+{
     mixin ProtocolBufferFromString!"
 enum PhoneType {
   MOBILE = 0;
@@ -237,6 +289,7 @@ message Person {
     assert(t.name == "");
     assert(t.id == 0);
     assert(t.phone.length == 0);
+    assert(t.toJson() == `{name:"",id:0,email:null,phone:[]}`);
 
     t.name = "Max Musterman";
     assert(t.name == "Max Musterman");
@@ -262,6 +315,8 @@ message Person {
     t.phone ~= pn1;
     assert(t.phone[0] == pn1);
     assert(t.phone.length == 1);
+
+    assert(t.toJson() == `{name:"Max Musterman",id:3,email:"Max.Musterman@example.com",phone:[{number:"0123456789",type:2}]}`);
 
     pn1.type.clean();
     assert(pn1.type == PhoneType.HOME);

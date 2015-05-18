@@ -16,6 +16,7 @@ import std.conv;
 import std.exception;
 import std.stdio;
 import std.string;
+import std.format;
 import std.traits;
 
 /**
@@ -115,31 +116,32 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						throw unexpected("enum in " ~ ContextName);
 					}
 				}
-				/+
-				case "service": {
-					readService();
-					return;
-				}
-				+/
 				case "extend": {
 					readExtend();
 					return;
 				}
-				/+
-				case "rpc": {
-					static if( hasMember!(Context, "rpc")) {
-						readRpc();
+				case "service": {
+					static if(hasMember!(Context, "rpcServices")) {
+						context.rpcServices ~= readService();
 						return;
 					} else {
-						throw unexpected("rpc in " ~ context)
+						throw unexpected("service in " ~ ContextName);
 					}
 				}
-				+/
+				case "rpc": {
+					static if( hasMember!(Context, "rpc")) {
+						context.rpc ~= readRpc();
+						return;
+					} else {
+						throw unexpected("rpc in " ~ ContextName);
+					}
+				}
 				case "required":
 				case "optional":
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
-						context.fields ~= readField(label);
+						string type = readName();
+						context.fields ~= readField(label, type);
 						return;
 					} else {
 						throw unexpected("fields must be nested");
@@ -161,6 +163,12 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.values[label] = tag;
 						return;
 					} else {
+						static if( hasMember!(Context, "fields") ) {
+							if(dproto.serialize.IsBuiltinType(label)) {
+								context.fields ~= readField("optional", label);
+								return;
+							}
+						}
 						throw unexpected("unexpected label: " ~ label);
 					}
 				}
@@ -198,25 +206,59 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			return;
 		}
 
-		static if(0)
-		/** Reads a service declaration and returns it.
-			@todo */
+		/** Reads a service declaration and returns it. */
 		Service readService() {
 			string name = readName();
+			auto ret = Service(name);
+
 			Service.Method[] methods = [];
 			enforce(readChar() == '{', unexpected("expected '{'"));
 			while (true) {
-				string methodDocumentation = readDocumentation();
+				readDocumentation();
 				if (peekChar() == '}') {
 					pos++;
 					break;
 				}
-				Object declared = readDeclaration(Context.SERVICE);
-				if (cast(Service.Method)declared) {
-					methods.add(cast(Service.Method) declared);
+				readDeclaration(ret);
+			}
+			return ret;
+		}
+
+
+		/** Reads an rpc method and returns it. */
+		Service.Method readRpc() {
+			string documentation = "";
+			string name = readName();
+
+			enforce(readChar() == '(', unexpected("expected '('"));
+			string requestType = readName();
+			enforce(readChar() == ')', unexpected("expected ')'"));
+
+			enforce(readWord() == "returns", unexpected("expected 'returns'"));
+
+			enforce(readChar() == '(', unexpected("expected '('"));
+			string responseType = readName();
+			// @todo check for option prefixes, responseType is the last in the white spaced list
+			enforce(readChar() == ')', unexpected("expected ')'"));
+
+			auto ret = Service.Method(name, documentation, requestType, responseType);
+
+			/* process service options and documentation */
+			if (peekChar() == '{') {
+				pos++;
+				while (true) {
+					readDocumentation();
+					if (peekChar() == '}') {
+						pos++;
+						break;
+					}
+					readDeclaration(ret);
 				}
 			}
-			return new Service(name, methods);
+			else if (readChar() != ';') {
+				throw unexpected("expected ';'");
+			}
+			return ret;
 		}
 
 		/** Reads an enumerated type declaration and returns it. */
@@ -234,10 +276,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			return ret;
 		}
 
-		/** Reads an field declaration and returns it. */
-		Field readField(string label) {
+		/** Reads a field declaration and returns it. */
+		Field readField(string label, string type) {
 			Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
-			string type = readName();
 			string name = readName();
 			enforce(readChar() == '=', unexpected("expected '='"));
 			int tag = readInt();
@@ -310,42 +351,6 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			// If we see the close brace, finish immediately. This handles {}/[] and ,}/,] cases.
 			pos++;
 			return result;
-		}
-
-		static if(0)
-		/** Reads an rpc method and returns it.
-			@todo */
-		Service.Method readRpc(string documentation) {
-			string name = readName();
-
-			enforce(readChar() == '(', unexpected("expected '('"));
-			string requestType = readName();
-			enforce(readChar() == ')', unexpected("expected ')'"));
-
-			enforce(readWord() != "returns", unexpected("expected 'returns'"));
-
-			enforce(readChar() == '(', unexpected("expected '('"));
-			string responseType = readName();
-			enforce(readChar() == ')', unexpected("expected ')'"));
-
-			Option[] options = [];
-			if (peekChar() == '{') {
-				pos++;
-				while (true) {
-					string methodDocumentation = readDocumentation();
-					if (peekChar() == '}') {
-						pos++;
-						break;
-					}
-					Object declared = readDeclaration(methodDocumentation, Context.RPC);
-					if (cast(Option)declared) {
-						Option option = cast(Option) declared;
-						options.put(option.getName(), option.getValue());
-					}
-				}
-			} else if (readChar() != ';') throw unexpected("expected ';'");
-
-			return new Service.Method(name, documentation, requestType, responseType, options);
 		}
 
 	private:
