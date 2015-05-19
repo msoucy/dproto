@@ -56,6 +56,28 @@ struct MessageType {
 		foreach(et; enumTypes) et.toString(sink, fmt);
 		foreach(mt; messageTypes) mt.toString(sink, fmt);
 		foreach(field; fields) field.toString(sink, fmt);
+
+		// Methods for serialization and deserialization.
+		if(!fmt.flDash && fmt.spec != 'p') {
+
+			// JSON stringify
+			import std.json : JSONValue;
+			sink("string toJson() {");
+			sink(` return "{" ~ `);
+			bool firstVal = true;
+			foreach(f; fields) {
+				if(firstVal == true) {
+					firstVal = false;
+				} else {
+					sink(` "," ~ `);
+				}
+				sink(JSONValue(f.name).toString());
+				sink.formattedWrite(` ~ ":" ~ %s.toJson() ~ `, f.name, f.name);
+			}
+			sink(` "}";`);
+			sink("}\n");
+		}
+
 		if(fmt.spec != 'p') {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
 		}
@@ -116,6 +138,7 @@ struct ProtoPackage {
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 	Options options;
+	Service[] rpcServices;
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
@@ -133,6 +156,7 @@ struct ProtoPackage {
 		}
 		foreach(e; enumTypes) e.toString(sink, fmt);
 		foreach(m; messageTypes) m.toString(sink, fmt);
+		foreach(r; rpcServices) r.toString(sink, fmt);
 		if(fmt.spec == 'p') {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; ", opt, val);
@@ -167,12 +191,23 @@ struct Field {
 	{
 		switch(fmt.spec) {
 			case 'p':
-				sink.formattedWrite("%s %s %s = %s%p; ",
+				if(fmt.width == 3 && requirement != Requirement.REPEATED) {
+					sink.formattedWrite("%s %s = %s%p; ",
+						type, name, id, options);
+				}
+				else {
+					sink.formattedWrite("%s %s %s = %s%p; ",
 						requirement.to!string.toLower(),
 						type, name, id, options);
+				}
 				break;
 			default:
-				getDeclaration(sink);
+				if(!fmt.flDash) {
+					getDeclaration(sink);
+				} else {
+					sink.formattedWrite("%s %s;\n",
+						type, name);
+				}
 				break;
 		}
 	}
@@ -221,10 +256,82 @@ struct Field {
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);
-		sink.formattedWrite("%s.deserialize(msgdata, data);\n", name);
+		sink.formattedWrite("%s.deserialize(__msgdata, __data);\n", name);
 		if(requirement == Requirement.REQUIRED) {
 			sink.formattedWrite("%s_isset = true;\n", name);
 		}
 		sink("break;\n");
 	}
+}
+
+
+struct Service {
+	this(string name) {
+		this.name = name.idup;
+	}
+	string name;
+	Options options;
+	Method[] rpc;
+
+	struct Method {
+		this(string name, string documentation, string requestType, string responseType) {
+			this.name = name.idup;
+			this.documentation = documentation.idup;
+			this.requestType = requestType.idup;
+			this.responseType = responseType.idup;
+		}
+		string name;
+		string documentation;
+		string requestType;
+		string responseType;
+		Options options;
+
+		const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+		{
+			switch(fmt.spec) {
+				case 'p':
+					sink.formattedWrite("rpc %s (%s) returns (%s)", name, requestType, responseType);
+					if(options.length > 0) {
+						sink(" {\n");
+						foreach(opt, val; options) {
+							sink.formattedWrite("option %s = %s;\n", opt, val);
+						}
+						sink("}\n");
+					} else {
+						sink(";\n");
+					}
+					break;
+				default:
+					if(fmt.precision == 3) {
+						sink.formattedWrite("%s %s (%s) { %s res; return res; }\n", responseType, name, requestType, responseType);
+					} else if(fmt.precision == 2) {
+						sink.formattedWrite("void %s (const %s, ref %s);\n", name, requestType, responseType);
+					} else if(fmt.precision == 1) {
+						sink.formattedWrite("%s %s (%s);\n", responseType, name, requestType);
+					}
+					break;
+			}
+		}
+	}
+
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		switch(fmt.spec) {
+			case 'p':
+				sink.formattedWrite("service %s {\n", name);
+				break;
+			default:
+				if(fmt.precision == 3) {
+					sink.formattedWrite("class %s {\n", name);
+				} else if(fmt.precision == 2 || fmt.precision == 1) {
+					sink.formattedWrite("interface %s {\n", name);
+				} else {
+					return;
+				}
+				break;
+		}
+		foreach(m; rpc) m.toString(sink, fmt);
+		sink("}\n");
+	}
+
 }

@@ -4,14 +4,15 @@
  * Provides accessors for D string and D structs from proto files/data
  *
  * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Oct 5, 2013
- * Version: 0.0.2
+ * Date: Apr 1, 2015
+ * Version: 0.0.3
  */
 module dproto.dproto;
 
 import std.exception : enforce;
 import std.array;
 import std.range;
+
 
 /*******************************************************************************
  * Create D structures from proto file
@@ -22,11 +23,7 @@ import std.range;
  */
 template ProtocolBuffer(string s)
 {
-	import dproto.buffers;
-	import dproto.exception;
-	import dproto.serialize;
-	import dproto.parse;
-	import std.range;
+	import dproto.imports;
 	mixin(ParseProtoSchema(s,import(s)).toD());
 }
 
@@ -37,267 +34,332 @@ template ProtocolBuffer(string s)
  */
 template ProtocolBufferFromString(string s)
 {
-	import dproto.buffers;
-	import dproto.exception;
-	import dproto.serialize;
-	import dproto.parse;
-	import std.range;
+	import dproto.imports;
 	mixin(ParseProtoSchema("<none>",s).toD());
 }
 
-unittest
-{
-    assert(__traits(compiles,ProtocolBufferFromString!"message Test
-        {
-            optional string verySimple = 1;
-        }"));
+template ProtocolBufferInterface(string s) {
+	import dproto.imports;
+	mixin("%3.1s".format(ParseProtoSchema("<none>",s)));
 }
+
+template ProtocolBufferRpc(string s) {
+	import dproto.imports;
+	mixin("%3.2s".format(ParseProtoSchema("<none>",s)));
+}
+
+template ProtocolBufferImpl(string s) {
+	import dproto.imports;
+	mixin("%3.3s".format(ParseProtoSchema("<none>",s)));
+}
+
+template ProtocolBufferStruct(string s) {
+	import dproto.imports;
+	mixin("%-3.1s".format(ParseProtoSchema("<none>",s)));
+}
+
+
 
 unittest
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"
-        message Test
-        {
-            optional string verySimple = 1;
-            enum TestEnum
-            {
-                ONE = 1;
-                UNO = 1;
-                TOW = 2;
-            }
-        }"));
-}
-
-unittest
-{
-    mixin ProtocolBufferFromString!"
-        message Test
-        {
-            required int32 id = 1;
-            optional string verySimple = 2;
-            enum TestEnum
-            {
-                ONE = 1;
-                UNO = 1;
-                TOW = 2;
-            }
-            optional TestEnum testValue = 3;
-        }";
+	assert(__traits(compiles,ProtocolBufferFromString!"message Test
+		{
+			optional string verySimple = 1;
+		}"));
 }
 
 unittest
 {
-    assert(__traits(compiles, ProtocolBufferFromString!"message Test
-        {
-            optional string verySimple = 1;
-            enum TestEnum
-            {
-                ONE = 1;
-                UNO = 1;
-                TOW = 2;
-            }
-
-            optional string testValue = 2;
-        }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            optional string verySimple = 1;
-        }
-
-        optional NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            optional string verySimple2 = 1;
-        }
-
-        optional NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            optional string verySimple = 1;
-        }
-
-        repeated NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        required int32 id = 3;
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            required string verySimple = 1;
-        }
-
-        required NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        required int32 id = 3;
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            required string verySimple = 1;
-        }
-
-        repeated NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        required int32 id = 3;
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            required string verySimple = 1;
-        }
-
-        optional NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    assert(__traits(compiles, ProtocolBufferFromString!"
-    message Test
-    {
-        required int32 id = 3;
-        optional string verySimple = 1;
-        message NestedTest
-        {
-            required string verySimple = 1;
-        }
-
-        repeated NestedTest value = 2;
-    }"));
-}
-
-unittest
-{
-    mixin ProtocolBufferFromString!"
-enum PhoneType {
-  MOBILE = 0;
-  HOME = 0;
-  WORK = 2;
-}
-
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
-
-  message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = HOME];
-  }
-
-  repeated PhoneNumber phone = 4;
-}
-    ";
-
-    Person t;
-    assert(t.name == "");
-    assert(t.id == 0);
-    assert(t.phone.length == 0);
-
-    t.name = "Max Musterman";
-    assert(t.name == "Max Musterman");
-
-    t.id = 3;
-    assert(t.id == 3);
-
-    t.email = "Max.Musterman@example.com";
-    assert(t.email == "Max.Musterman@example.com");
-    assert(t.email.exists());
-
-    Person.PhoneNumber pn1;
-    pn1.number = "0123456789";
-    assert(pn1.number == "0123456789");
-    assert(pn1.type == PhoneType.HOME);
-    assert(pn1.type == PhoneType.MOBILE);
-
-    pn1.type = PhoneType.WORK;
-    assert(pn1.type == PhoneType.WORK);
-    assert(pn1.type == 2);
-    assert(pn1.type.exists());
-
-    t.phone ~= pn1;
-    assert(t.phone[0] == pn1);
-    assert(t.phone.length == 1);
-
-    pn1.type.clean();
-    assert(pn1.type == PhoneType.HOME);
-
-    t.phone.clean();
-    assert(t.phone.length == 0);
-
-    t.email.clean();
-    assert(t.email == "");
+	assert(__traits(compiles, ProtocolBufferFromString!"
+		message Test
+		{
+			optional string verySimple = 1;
+			enum TestEnum
+			{
+				ONE = 1;
+				UNO = 1;
+				TOW = 2;
+			}
+		}"));
 }
 
 unittest
 {
 	mixin ProtocolBufferFromString!"
-		message Person {
-		  required string name = 1;
-		  required int32 id = 2;
-		  optional string email = 3;
+		message Test
+		{
+			required int32 id = 1;
+			optional string verySimple = 2;
+			enum TestEnum
+			{
+				ONE = 1;
+				UNO = 1;
+				TOW = 2;
+			}
+			optional TestEnum testValue = 3;
+		}";
+}
 
-		  enum PhoneType {
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"message Test
+		{
+			optional string verySimple = 1;
+			enum TestEnum
+			{
+				ONE = 1;
+				UNO = 1;
+				TOW = 2;
+			}
+
+			optional string testValue = 2;
+		}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			optional string verySimple = 1;
+		}
+
+		optional NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			optional string verySimple2 = 1;
+		}
+
+		optional NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			optional string verySimple = 1;
+		}
+
+		repeated NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		required int32 id = 3;
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			required string verySimple = 1;
+		}
+
+		required NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		required int32 id = 3;
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			required string verySimple = 1;
+		}
+
+		repeated NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		required int32 id = 3;
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			required string verySimple = 1;
+		}
+
+		optional NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	assert(__traits(compiles, ProtocolBufferFromString!"
+	message Test
+	{
+		required int32 id = 3;
+		optional string verySimple = 1;
+		message NestedTest
+		{
+			required string verySimple = 1;
+		}
+
+		repeated NestedTest value = 2;
+	}"));
+}
+
+unittest
+{
+	enum serviceDefinition = "
+	message ServiceRequest {
+		string request = 1;
+	}
+	message ServiceResponse {
+		string response = 1;
+	}
+	service TestService {
+		rpc TestMethod (ServiceRequest) returns (ServiceResponse);
+	}
+	";
+
+	// Force code coverage in doveralls
+	import std.string;
+	import std.format;
+	import dproto.parse;
+	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>",serviceDefinition));
+
+
+	assert(__traits(compiles, ProtocolBufferFromString!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferInterface!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferRpc!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferImpl!serviceDefinition));
+	assert(__traits(compiles, ProtocolBufferStruct!serviceDefinition));
+
+	// Example from README.md.
+	mixin ProtocolBufferInterface!serviceDefinition;
+
+	class ServiceImplementation : TestService {
+		ServiceResponse TestMethod(ServiceRequest input) {
+			ServiceResponse output;
+			output.response = "received: " ~ input.request;
+			return output;
+		}
+	}
+	auto serviceTest = new ServiceImplementation;
+	ServiceRequest input;
+	input.request = "message";
+	assert(serviceTest.TestMethod(input).response == "received: message");
+
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	enum PhoneType {
+		MOBILE = 0;
+		HOME = 0;
+		WORK = 2;
+	}
+
+	message Person {
+		required string name = 1;
+		required int32 id = 2;
+		optional string email = 3;
+
+		message PhoneNumber {
+			required string number = 1;
+			optional PhoneType type = 2 [default = HOME];
+		}
+
+		repeated PhoneNumber phone = 4;
+	}
+	";
+
+	Person t;
+	assert(t.name == "");
+	assert(t.id == 0);
+	assert(t.phone.length == 0);
+	assert(t.toJson() == `{name:"",id:0,email:null,phone:[]}`);
+
+	t.name = "Max Musterman";
+	assert(t.name == "Max Musterman");
+
+	t.id = 3;
+	assert(t.id == 3);
+
+	t.email = "Max.Musterman@example.com";
+	assert(t.email == "Max.Musterman@example.com");
+	assert(t.email.exists());
+
+	Person.PhoneNumber pn1;
+	pn1.number = "0123456789";
+	assert(pn1.number == "0123456789");
+	assert(pn1.type == PhoneType.HOME);
+	assert(pn1.type == PhoneType.MOBILE);
+
+	pn1.type = PhoneType.WORK;
+	assert(pn1.type == PhoneType.WORK);
+	assert(pn1.type == 2);
+	assert(pn1.type.exists());
+
+	t.phone ~= pn1;
+	assert(t.phone[0] == pn1);
+	assert(t.phone.length == 1);
+
+	assert(t.toJson() == `{name:"Max Musterman",id:3,email:"Max.Musterman@example.com",phone:[{number:"0123456789",type:2}]}`);
+
+	pn1.type.clean();
+	assert(pn1.type == PhoneType.HOME);
+
+	t.phone.clean();
+	assert(t.phone.length == 0);
+
+	t.email.clean();
+	assert(t.email == "");
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	message Person {
+		required string name = 1;
+		required int32 id = 2;
+		optional string email = 3;
+
+		enum PhoneType {
 			MOBILE = 0;
 			HOME = 0;
 			WORK = 2;
-		  }
+		}
 
-		  message PhoneNumber {
+		message PhoneNumber {
 			required string number = 1;
 			optional PhoneType type = 2 [default = HOME];
-		  }
-
-		  repeated PhoneNumber phone = 4;
 		}
 
-		message AddressBook {
-		  repeated Person person = 1;
-		}
+		repeated PhoneNumber phone = 4;
+	}
+
+	message AddressBook {
+		repeated Person person = 1;
+	}
 	";
 
 	Person t;
@@ -341,28 +403,28 @@ unittest
 unittest
 {
 	 mixin ProtocolBufferFromString!"
-enum PhoneType {
-  MOBILE = 0;
-  HOME = 0;
-  WORK = 2;
-}
+	enum PhoneType {
+		MOBILE = 0;
+		HOME = 0;
+		WORK = 2;
+	}
 
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
+	message Person {
+		required string name = 1;
+		required int32 id = 2;
+		optional string email = 3;
 
-  message PhoneNumber {
-	required string number = 1;
-	optional PhoneType type = 2 [default = HOME];
-  }
+		message PhoneNumber {
+			required string number = 1;
+			optional PhoneType type = 2 [default = HOME];
+		}
 
-  repeated PhoneNumber phone = 4;
-}
+		repeated PhoneNumber phone = 4;
+	}
 
-message AddressBook {
-  repeated Person person = 1;
-}
+	message AddressBook {
+		repeated Person person = 1;
+	}
 	";
 
 	Person t;
@@ -409,28 +471,28 @@ message AddressBook {
 unittest
 {
 	mixin ProtocolBufferFromString!"
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
+	message Person {
+		required string name = 1;
+		required int32 id = 2;
+		optional string email = 3;
 
-  enum PhoneType {
-	MOBILE = 0;
-	HOME = 0;
-	WORK = 2;
-  }
+		enum PhoneType {
+			MOBILE = 0;
+			HOME = 0;
+			WORK = 2;
+		}
 
-  message PhoneNumber {
-	required string number = 1;
-	optional PhoneType type = 2 [default = HOME];
-  }
+		message PhoneNumber {
+			required string number = 1;
+			optional PhoneType type = 2 [default = HOME];
+		}
 
-  repeated PhoneNumber phone = 4;
-}
+		repeated PhoneNumber phone = 4;
+	}
 
-message AddressBook {
-  repeated Person person = 1;
-}
+	message AddressBook {
+		repeated Person person = 1;
+	}
 	";
 
 	Person t;
@@ -498,10 +560,10 @@ message AddressBook {
 unittest
 {
 	mixin ProtocolBufferFromString!"
-message Person {
-  required string name = 1;
-}
-";
+	message Person {
+		required string name = 1;
+	}
+	";
 
 	static auto rvalue(in ubyte[] val) { return val; }
 
@@ -522,6 +584,17 @@ message Person {
 	p.deserialize(val);
 	assert(val.length == 0);
 	assert(p.name == "abc");
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	message Field_Name_Equals_Internal_Variable_Name {
+		required int32 r = 1;
+		required int32 data = 2;
+		required int32 msgdata = 3;
+	}
+	";
 }
 
 unittest

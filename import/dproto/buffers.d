@@ -114,6 +114,19 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		isset = true;
 	}
 
+	/** serialize as JSON */
+	import std.json : JSONValue;
+	string toJson() {
+		if(isset) {
+			static if(isBuiltinType(BufferType)) {
+				return JSONValue(raw).toString();
+			} else {
+				return raw.toJson();
+			}
+		} else {
+			return "null";
+		}
+	}
 }
 
 /*******************************************************************************
@@ -181,6 +194,15 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 
+	/** serialize as JSON */
+	import std.json : JSONValue;
+	string toJson() {
+		static if(isBuiltinType(BufferType)) {
+			return JSONValue(raw).toString();
+		} else {
+			return raw.toJson();
+		}
+	}
 }
 
 /*******************************************************************************
@@ -290,6 +312,24 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 
+	/** serialize as JSON */
+	string toJson() {
+		string ret = "[";
+		if(raw.length) {
+			if(ret.length > 1) {
+				ret ~= ",";
+			}
+			foreach(val; raw) {
+				static if(isBuiltinType(BufferType)) {
+					ret ~= std.json.JSONValue(val).toString();
+				} else {
+					ret ~= val.toJson();
+				}
+			}
+		}
+		ret ~= "]";
+		return ret;
+	}
 }
 
 struct CntRange

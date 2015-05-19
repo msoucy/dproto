@@ -7,3 +7,12 @@ d:
   - gdc-4.9.0
   - ldc
   - ldc-0.14.0
+
+before_install:
+  - dub fetch doveralls
+
+script:
+  - dub test --coverage
+
+after_success:
+  - dub run doveralls
