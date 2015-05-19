@@ -400,7 +400,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 	}
 
-	/** serialize as JSON @todo */
+	/** serialize as JSON */
 	string toJson() {
 		string ret = "[";
 		if(raw.length) {
