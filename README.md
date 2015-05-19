@@ -138,3 +138,32 @@ int main()
 	return 0;
 }
 ```
+
+
+## Services
+
+Generate interfaces for service definitions.
+
+```d
+import dproto.dproto;
+
+mixin ProtocolBufferInterface!"
+	message ServiceRequest {
+		string request = 1;
+	}
+	message ServiceResponse {
+		string response = 1;
+	}
+	service TestService {
+		rpc TestMethod (ServiceRequest) returns (ServiceResponse);
+	}
+";
+
+class ServiceImplementation : TestService {
+	ServiceResponse TestMethod(ServiceRequest input) {
+		ServiceResponse output;
+		output.response = "received: " ~ input.request;
+		return output;
+	}
+}
+```
