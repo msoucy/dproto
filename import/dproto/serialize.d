@@ -235,13 +235,13 @@ void toVarint(R, T)(ref R r, T src) @trusted @property
 	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte maxMask = 0b_1000_0000;
-	
+
 	while( src >= maxMask )
 	{
 		r.put(cast(ubyte)(src | maxMask));
 		src >>= 7;
 	}
-	
+
 	r.put(cast(ubyte) src);
 }
 
@@ -295,20 +295,20 @@ T fromVarint(T = ulong, R)(R src) @property
 {
 	immutable ubyte mask = 0b_0111_1111;
 	T ret;
-	
+
 	size_t offset;
 	foreach(val; src)
 	{
 		ret |= cast(T)(val & mask) << offset;
-		
+
 		enforce(
 				offset < T.sizeof * 8,
 				"Varint value is too big for the type " ~ T.stringof
 			);
-		
+
 		offset += 7;
 	}
-	
+
 	return ret;
 }
 
@@ -337,7 +337,7 @@ unittest {
 	assert(ubs(0x8E, 0x02).fromVarint() == 270);
 	assert(ubs(0x9E, 0xA7, 0x05).fromVarint() == 86942);
 	assert(ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint!int() == -1);
-	
+
 	bool overflow = false;
 	try
 		ubs(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01).fromVarint();
@@ -351,6 +351,16 @@ unittest {
 enum ENUM_SERIALIZATION = "int32";
 /// The message type to encode a packed message as
 enum PACKED_MSG_TYPE = 2;
+
+/*******************************************************************************
+ * Test a range for being a valid ProtoBuf input range
+ *
+ * Params:
+ *     R = type to test
+ * Returns: The value
+ */
+
+enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
 
 /*******************************************************************************
  * Decode a series of bytes into a value
@@ -399,31 +409,41 @@ BuffType!T readProto(string T, R)(ref R src)
 }
 
 /*******************************************************************************
+ * Test a range for being a valid ProtoBuf output range
+ *
+ * Params:
+ *     R = type to test
+ * Returns: The value
+ */
+
+enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
+
+/*******************************************************************************
  * Encode a value into a series of bytes
  *
  * Params:
  *     r = output range
- *  	src = The raw data
+ *     src = The raw data
  * Returns: The encoded value
  */
-void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R &&
 	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
 {
 	toVarint(r, src);
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R &&
 	   (T == "sint32" || T == "sint64"))
 {
 	toVarint(r, src.toZigZag);
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R &&
 	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
 		T == "float" || T == "fixed32" || T == "sfixed32"))
 {
@@ -431,8 +451,8 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isOutputRange!(R, ubyte) &&
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R &&
 	   (T == "string" || T == "bytes"))
 {
 	toVarint(r, src.length);

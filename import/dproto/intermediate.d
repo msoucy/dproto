@@ -73,9 +73,9 @@ struct MessageType {
 			sink("}\n");
 
 			// Serialize function
-			sink("ubyte[] serialize() ");
+			sink("ubyte[] serialize() const");
 			sink("{ auto __a = appender!(ubyte[]); serializeTo(__a); return __a.data; }\n");
-			sink("void serializeTo(R)(ref R __r)\n");
+			sink("void serializeTo(R)(ref R __r) const\n");
 			sink("if(isOutputRange!(R, ubyte)) { ");
 			foreach(f; fields) {
 				sink.formattedWrite("%s.serializeTo(__r);\n", f.name);

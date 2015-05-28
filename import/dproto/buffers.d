@@ -73,7 +73,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			raw = val;
 			return this;
 		}
-		deprecated ref ValueType opGet() @property {
+		deprecated ref inout(ValueType) opGet() @property inout {
 			return raw;
 		}
 	} else {
@@ -82,7 +82,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			raw = val;
 			return this;
 		}
-		ref ValueType opGet() @property {
+		ref inout(ValueType) opGet() @property inout {
 			return raw;
 		}
 	}
@@ -93,12 +93,12 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data, or an empty array if the buffer is not set
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		if(isset) {
@@ -185,11 +185,11 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 
 	static if(isDeprecated) {
-		deprecated ref ValueType opGet() @property {
+		deprecated ref inout(ValueType) opGet() @property inout {
 			return raw;
 		}
 	} else {
-		ref ValueType opGet() @property {
+		ref inout(ValueType) opGet() @property inout {
 			return raw;
 		}
 	}
@@ -201,12 +201,12 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		toVarint(r, MsgType!BufferType | (id << 3));
@@ -299,7 +299,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			raw = val;
 			return this;
 		}
-		deprecated ref ValueType[] opGet() @property {
+		deprecated ref inout(ValueType[]) opGet() @property inout {
 			return raw;
 		}
 	} else {
@@ -307,7 +307,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			raw = val;
 			return this;
 		}
-		ref ValueType[] opGet() @property {
+		ref inout(ValueType[]) opGet() @property inout {
 			return raw;
 		}
 	}
@@ -336,12 +336,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *
 	 * Returns: The proto-encoded data
 	 */
-	ubyte[] serialize() {
+	ubyte[] serialize() const {
 		auto a = appender!(ubyte[]);
 		serializeTo(a);
 		return a.data;
 	}
-	void serializeTo(R)(ref R r)
+	void serializeTo(R)(ref R r) const
 		if(isOutputRange!(R, ubyte))
 	{
 		static if(packed) {
