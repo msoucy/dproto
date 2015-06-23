@@ -88,7 +88,6 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
-
 	/***************************************************************************
 	 * Deserialize data into a buffer
 	 *
@@ -280,7 +279,6 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		return raw.length;
 	}
-
 
 	/***************************************************************************
 	 * Deserialize data into a buffer
