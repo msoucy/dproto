@@ -668,3 +668,11 @@ unittest
 	DNSPayload p2;
 	p2.deserialize(buf);
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+		message Person {
+			required uint32 id = 1;
+		}";
+}

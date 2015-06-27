@@ -426,7 +426,7 @@ enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
  *     src = The raw data
  * Returns: The encoded value
  */
-void writeProto(string T, R)(ref R r, const BuffType!T src)
+void writeProto(string T, R)(ref R r, BuffType!T src)
 	if(isProtoOutputRange!R &&
 	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
 {
