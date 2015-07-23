@@ -88,31 +88,6 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
-	/***************************************************************************
-	 * Deserialize data into a buffer
-	 *
-	 * This marks the buffer as being set.
-	 *
-	 * Params:
-	 * 		msgdata	=	The message's ID and type
-	 * 		data	=	The data to decode
-	 */
-	void deserialize(R)(long msgdata, ref R data)
-		if(isProtoInputRange!R)
-	{
-		enforce(msgdata.msgNum() == id,
-				new DProtoException("Incorrect message number"));
-		enforce(msgdata.wireType() == BufferType.msgType,
-				new DProtoException("Type mismatch"));
-		static if(BufferType.isBuiltinType) {
-			raw = data.readProto!BufferType().to!RealType();
-		} else {
-			auto myData = data.readProto!"bytes"();
-			raw.deserialize(myData);
-		}
-		isset = true;
-	}
-
 	/** serialize as JSON */
 	import std.json : JSONValue;
 	string toJson() {
@@ -170,28 +145,6 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	}
 	alias opGet this;
 
-
-	/***************************************************************************
-	 * Deserialize data into a buffer
-	 *
-	 * Params:
-	 *  	msgdata = The message's ID and type
-	 *  	data    = The data to decode
-	 */
-	void deserialize(R)(long msgdata, ref R data)
-		if(isProtoInputRange!R)
-	{
-		enforce(msgdata.msgNum() == id,
-				new DProtoException("Incorrect message number"));
-		enforce(msgdata.wireType() == BufferType.msgType,
-				new DProtoException("Type mismatch"));
-		static if(BufferType.isBuiltinType) {
-			raw = data.readProto!BufferType().to!RealType();
-		} else {
-			auto myData = data.readProto!"bytes"();
-			raw.deserialize(myData);
-		}
-	}
 
 	/** serialize as JSON */
 	import std.json : JSONValue;
@@ -278,36 +231,6 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	size_t length() @property const
 	{
 		return raw.length;
-	}
-
-	/***************************************************************************
-	 * Deserialize data into a buffer
-	 *
-	 * Received data is appended to the array.
-	 *
-	 * Params:
-	 *  	msgdata = The message's ID and type
-	 *  	data    = The data to decode
-	 */
-	void deserialize(R)(long msgdata, ref R data)
-		if(isProtoInputRange!R)
-	{
-		enforce(msgdata.msgNum() == id,
-				new DProtoException("Incorrect message number"));
-		static if(BufferType.isBuiltinType) {
-			if(msgdata.wireType == PACKED_MSG_TYPE && BufferType.msgType != 2) {
-				auto myData = data.readProto!"bytes"();
-				while(myData.length) {
-					raw ~= myData.readProto!BufferType().to!RealType();
-				}
-			} else {
-				raw ~= data.readProto!BufferType().to!RealType();
-			}
-		} else {
-			enforce(msgdata.wireType == BufferType.msgType,
-					new DProtoException("Cannot have packed repeated message member"));
-			raw ~= ValueType(data.readProto!"bytes"());
-		}
 	}
 
 	/** serialize as JSON */

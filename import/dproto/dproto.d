@@ -453,7 +453,8 @@ unittest
 		assert(t2.name == "Max Musterman");
 		assert(t2.id == 3);
 		assert(t2.email == "test@example.com");
-		assert(t2.email.exists());
+		import dproto.attributes;
+		assert(t2.email.opGet.isset());
 		assert(t2.phone[0].number == "0123456789");
 		assert(t2.phone[0].type == PhoneType.WORK);
 		assert(t2.phone[1].number == "0123456789");

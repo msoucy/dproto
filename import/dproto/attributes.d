@@ -117,7 +117,8 @@ template ProtoAccessors()
 				alias __field = Id!(__traits(getMember, this, __member));
 				alias __fieldData = getAnnotation!(__field, ProtoField);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
-					__field.deserialize(__msgdata, __r);
+					enum wt = __fieldData.wireType;
+					__field.opGet.putProtoVal!wt(__r);
 					__matched = true;
 				}
 			}
@@ -168,6 +169,37 @@ void serializeField(alias field, R)(ref R r) const
 		} else {
 			serializeProto!fieldData(field.opGet, r);
 		}
+	}
+}
+
+bool isset(T)(T t)
+{
+	return t != protoDefault!T;
+}
+
+void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
+	if(isProtoInputRange!R)
+{
+	static if(is(T : U[], U) && !(is(T : string) || is(T : const(ubyte)[]))) {
+		U u;
+		u.putSingleProtoVal!wireType(r);
+		t ~= u;
+	} else {
+		t.putSingleProtoVal!wireType(r);
+	}
+}
+
+void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
+	if(isProtoInputRange!R)
+{
+	import std.conv : to;
+	static if(wireType.isBuiltinType) {
+		t = r.readProto!wireType().to!T();
+	} else static if(is(T == enum)) {
+		t = r.readProto!ENUM_SERIALIZATION().to!T();
+	} else {
+		auto myData = r.readProto!"bytes"();
+		return t.deserialize(myData);
 	}
 }
 
