@@ -453,3 +453,15 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 	toVarint(r, src.length);
 	r.put(cast(ubyte[])src);
 }
+
+/*******************************************************************************
+ * Simple range that ignores data but counts the length
+ */
+struct CntRange
+{
+@nogc:
+	size_t cnt;
+	void put(in ubyte) { ++cnt; }
+	void put(in ubyte[] ary) { cnt += ary.length; }
+	alias cnt this;
+}

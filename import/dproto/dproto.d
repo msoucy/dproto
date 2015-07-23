@@ -305,8 +305,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -316,8 +316,8 @@ unittest
 
 	pn1.type = PhoneType.WORK;
 	assert(pn1.type == PhoneType.WORK);
+	assert(pn1.type);
 	assert(pn1.type == 2);
-	assert(pn1.type.exists());
 
 	t.phone ~= pn1;
 	assert(t.phone[0] == pn1);
@@ -325,13 +325,13 @@ unittest
 
 	assert(t.toJson() == `{name:"Max Musterman",id:3,email:"Max.Musterman@example.com",phone:[{number:"0123456789",type:2}]}`);
 
-	pn1.type.clean();
+	pn1.type = pn1.type.init;
 	assert(pn1.type == PhoneType.HOME);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 }
 
@@ -374,8 +374,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -385,10 +385,10 @@ unittest
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 
 	AddressBook addressbook;
@@ -452,9 +452,8 @@ unittest
 	{
 		assert(t2.name == "Max Musterman");
 		assert(t2.id == 3);
+		assert(t2.email);
 		assert(t2.email == "test@example.com");
-		import dproto.attributes;
-		assert(t2.email.opGet.isset());
 		assert(t2.phone[0].number == "0123456789");
 		assert(t2.phone[0].type == PhoneType.WORK);
 		assert(t2.phone[1].number == "0123456789");
@@ -508,8 +507,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -520,19 +519,19 @@ unittest
 	pn1.type = Person.PhoneType.WORK;
 	assert(pn1.type == Person.PhoneType.WORK);
 	assert(pn1.type == 2);
-	assert(pn1.type.exists());
+	assert(pn1.type);
 
 	t.phone ~= pn1;
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	pn1.type.clean();
+	pn1.type = pn1.type.init;
 	assert(pn1.type == Person.PhoneType.HOME);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 
 	AddressBook addressbook;
@@ -600,7 +599,6 @@ unittest
 
 unittest
 {
-	import dproto.buffers;
 	import dproto.exception;
 	import dproto.serialize;
 	import dproto.parse;

@@ -58,6 +58,7 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 
 		// Methods for serialization and deserialization.
+		static if(0)
 		if(!fmt.flDash && fmt.spec != 'p') {
 
 			// JSON stringify
@@ -224,35 +225,15 @@ struct Field {
 		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
-		sink(requirement.to!string.capitalize());
-		sink.formattedWrite(`Buffer!(%s, "%s", `, id, type);
 		if(type.isBuiltinType) {
 			sink.formattedWrite(`BuffType!"%s"`, type);
 		} else {
 			sink(type);
 		}
-		sink(", ");
-		sink(options.get("deprecated", "false"));
-		if(requirement == Requirement.OPTIONAL) {
-			sink(", ");
-			if(auto dV = "default" in options) {
-				if(!type.isBuiltinType()) {
-					sink.formattedWrite("%s.", type);
-				}
-				sink(*dV);
-			} else {
-				if(type.isBuiltinType()) {
-					sink.formattedWrite(`(BuffType!"%s")`, type);
-				} else {
-					sink.formattedWrite("%s", type);
-				}
-				sink(".init");
-			}
-		} else if(requirement == Requirement.REPEATED) {
-			sink(", ");
-			sink(options.get("packed", "false"));
+		if(requirement == Requirement.REPEATED) {
+			sink("[]");
 		}
-		sink.formattedWrite(") %s;\n\n", name);
+		sink.formattedWrite(" %s;\n\n", name);
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);

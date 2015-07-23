@@ -118,7 +118,7 @@ template ProtoAccessors()
 				alias __fieldData = getAnnotation!(__field, ProtoField);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
 					enum wt = __fieldData.wireType;
-					__field.opGet.putProtoVal!wt(__r);
+					__field.putProtoVal!wt(__r);
 					__matched = true;
 				}
 			}
@@ -156,7 +156,7 @@ template protoDefault(T) {
 void serializeField(alias field, R)(ref R r) const
 	if(isProtoOutputRange!R)
 {
-	alias fieldType = typeof(field.opGet);
+	alias fieldType = typeof(field);
 	enum fieldData = getAnnotation!(field, ProtoField);
 	bool needsToSerialize = hasValueAnnotation!(field, Required);
 	if(!needsToSerialize) {
@@ -165,16 +165,11 @@ void serializeField(alias field, R)(ref R r) const
 	if(needsToSerialize) {
 		static if(hasValueAnnotation!(field, Packed) && is(fieldType : T[], T)
 				&& (is(T == enum) || fieldData.wireType.isBuiltinType)) {
-			serializePackedProto!fieldData(field.opGet, r);
+			serializePackedProto!fieldData(field, r);
 		} else {
-			serializeProto!fieldData(field.opGet, r);
+			serializeProto!fieldData(field, r);
 		}
 	}
-}
-
-bool isset(T)(T t)
-{
-	return t != protoDefault!T;
 }
 
 void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
@@ -225,7 +220,7 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 		r.writeProto!ENUM_SERIALIZATION(data);
 	} else static if(__traits(compiles, data.serialize())) {
 		r.toVarint(fieldData.header);
-		dproto.buffers.CntRange cnt;
+		dproto.serialize.CntRange cnt;
 		data.serializeTo(cnt);
 		r.toVarint(cnt.cnt);
 		data.serializeTo(r);
@@ -240,7 +235,7 @@ void serializePackedProto(ProtoField fieldData, T, R)(const T data, ref R r)
 	static assert(fieldData.wireType.isBuiltinType,
 			"Cannot have packed repeated message");
 	if(data.length) {
-		dproto.buffers.CntRange cnt;
+		dproto.serialize.CntRange cnt;
 		static if(is(T == enum)) {
 			enum wt = ENUM_SERIALIZATION.msgType;
 		} else {
