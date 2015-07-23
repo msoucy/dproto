@@ -432,7 +432,7 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
+void writeProto(string T, R)(ref R r, BuffType!T src)
 	if(isProtoOutputRange!R && T.msgType == "int32".msgType)
 {
 	toVarint(r, src);

@@ -670,3 +670,11 @@ unittest
 	p2.deserialize(buf);
 	assert(p1 == p2);
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+		message Person {
+			required uint32 id = 1;
+		}";
+}
