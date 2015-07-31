@@ -296,7 +296,9 @@ unittest
 	assert(t.name == "");
 	assert(t.id == 0);
 	assert(t.phone.length == 0);
-	assert(t.toJson() == `{name:"",id:0,email:null,phone:[]}`);
+	version(Have_painlessjson) {
+		assert(t.toJson() == `{"email":"","id":0,"name":"","phone":[]}`);
+	}
 
 	t.name = "Max Musterman";
 	assert(t.name == "Max Musterman");
@@ -323,7 +325,9 @@ unittest
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	assert(t.toJson() == `{name:"Max Musterman",id:3,email:"Max.Musterman@example.com",phone:[{number:"0123456789",type:2}]}`);
+	version(Have_painlessjson) {
+		assert(t.toJson() == `{"email":"Max.Musterman@example.com","id":3,"name":"Max Musterman","phone":[{"number":"0123456789","type":2}]}`);
+	}
 
 	pn1.type = pn1.type.init;
 	assert(pn1.type == PhoneType.HOME);
@@ -402,7 +406,7 @@ unittest
 
 unittest
 {
-	 mixin ProtocolBufferFromString!"
+	mixin ProtocolBufferFromString!"
 	enum PhoneType {
 		MOBILE = 0;
 		HOME = 0;

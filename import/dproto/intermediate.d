@@ -58,27 +58,6 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 
 		// Methods for serialization and deserialization.
-		static if(0)
-		if(!fmt.flDash && fmt.spec != 'p') {
-
-			// JSON stringify
-			import std.json : JSONValue;
-			sink("string toJson() {");
-			sink(` return "{" ~ `);
-			bool firstVal = true;
-			foreach(f; fields) {
-				if(firstVal == true) {
-					firstVal = false;
-				} else {
-					sink(` "," ~ `);
-				}
-				sink(JSONValue(f.name).toString());
-				sink.formattedWrite(` ~ ":" ~ %s.toJson() ~ `, f.name, f.name);
-			}
-			sink(` "}";`);
-			sink("}\n");
-		}
-
 		if(fmt.spec != 'p') {
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
 		}

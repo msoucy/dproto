@@ -128,6 +128,13 @@ template ProtoAccessors()
 		}
 	}
 
+	version(Have_painlessjson) {
+		auto toJson() const {
+			import painlessjson;
+			import std.conv : to;
+			return painlessjson.toJSON(this).to!string;
+		}
+	}
 }
 
 template ProtoFields(alias self) {
