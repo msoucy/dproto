@@ -8,6 +8,7 @@
 module dproto.attributes;
 
 import dproto.serialize;
+import painlesstraits : getAnnotation, hasValueAnnotation;
 
 // nogc compat shim using UDAs (@nogc must appear as function prefix)
 static if (__VERSION__ < 2066) enum nogc;
@@ -29,43 +30,6 @@ struct ProtoField
 
 struct Required {}
 struct Packed {}
-
-template hasValueAnnotation(alias f, Attr)
-{
-	static bool helper()
-	{
-		foreach(attr; __traits(getAttributes, f))
-			static if(is(typeof(attr) == Attr))
-				return true;
-		return false;
-	}
-	enum hasValueAnnotation = helper();
-}
-
-template hasAnyValueAnnotation(alias f, Attr...)
-{
-	static bool helper()
-	{
-		foreach(annotation; Attr)
-			static if(hasValueAnnotation!(f, annotation))
-				return true;
-		return false;
-	}
-	enum hasAnyAnnotation = helper();
-}
-
-template getAnnotation(alias f, Attr)
-	if(hasValueAnnotation!(f, Attr))
-{
-	static auto helper()
-	{
-		foreach(attr; __traits(getAttributes, f))
-			static if(is(typeof(attr) == Attr))
-				return attr;
-		assert(0);
-	}
-	enum getAnnotation = helper();
-}
 
 alias Id(alias T) = T;
 
