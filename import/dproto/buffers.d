@@ -29,6 +29,7 @@ import dproto.exception;
  *  	defaultValue = The default value for the internal storage
  */
 struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, alias defaultValue=RealType.init) {
+	public enum TagID = id;
 	private {
 		alias ValueType = RealType;
 		static if(is(ValueType == enum)) {
@@ -163,6 +164,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
  *  	isDeprecated = Deprecates the accessors if true
  */
 struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false) {
+	public enum TagID = id;
 	private {
 		alias ValueType = RealType;
 		static if(is(ValueType == enum)) {
@@ -266,6 +268,7 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
  *  	packed       = The default value for the internal storage
  */
 struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=false, bool packed=false) {
+	public enum TagID = id;
 	private {
 		alias ValueType = RealType;
 		static if(is(ValueType == enum)) {
@@ -418,6 +421,15 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		ret ~= "]";
 		return ret;
 	}
+}
+
+unittest {
+	alias optional_string = OptionalBuffer!(1, "string", BuffType!"string", false, (BuffType!"string").init);
+	assert(optional_string.TagID == 1);
+	alias required_string = RequiredBuffer!(2, "string", BuffType!"string");
+	assert(required_string.TagID == 2);
+	alias repeated_string = RepeatedBuffer!(3, "string", BuffType!"string");
+	assert(repeated_string.TagID == 3);
 }
 
 private struct CntRange
