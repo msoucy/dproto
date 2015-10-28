@@ -1,5 +1,6 @@
 module dproto.imports;
 
+public import dproto.attributes;
 public import dproto.exception;
 public import dproto.serialize;
 public import dproto.parse;

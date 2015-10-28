@@ -33,6 +33,12 @@ struct Packed {}
 
 alias Id(alias T) = T;
 
+template TagId(alias T)
+	if(hasValueAnnotation!(T, ProtoField))
+{
+	enum TagId = getAnnotation!(T, ProtoField).fieldNumber;
+}
+
 template ProtoAccessors()
 {
 

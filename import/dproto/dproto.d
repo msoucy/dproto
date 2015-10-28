@@ -680,3 +680,17 @@ unittest
 			required uint32 id = 1;
 		}";
 }
+
+unittest {
+	mixin ProtocolBufferFromString!`
+		message TestStructure
+		{
+			optional string optional_string = 1;
+			required string required_string = 2;
+			repeated string repeated_string = 3;
+		}
+	`;
+	assert(TagId!(TestStructure.optional_string) == 1);
+	assert(TagId!(TestStructure.required_string) == 2);
+	assert(TagId!(TestStructure.repeated_string) == 3);
+}
