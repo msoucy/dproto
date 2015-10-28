@@ -9,10 +9,7 @@ module dproto.attributes;
 
 import dproto.serialize;
 import painlesstraits : getAnnotation, hasValueAnnotation;
-
-// nogc compat shim using UDAs (@nogc must appear as function prefix)
-static if (__VERSION__ < 2066) enum nogc;
-
+import dproto.compat;
 
 struct ProtoField
 {
@@ -175,7 +172,7 @@ void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
 	}
 }
 
-void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
+void serializeProto(alias fieldData, T, R)(const T data, ref R r)
 	if(isProtoOutputRange!R)
 {
 	static if(is(T : const string)) {
@@ -206,7 +203,7 @@ void serializeProto(ProtoField fieldData, T, R)(const T data, ref R r)
 	}
 }
 
-void serializePackedProto(ProtoField fieldData, T, R)(const T data, ref R r)
+void serializePackedProto(alias fieldData, T, R)(const T data, ref R r)
 	if(isProtoOutputRange!R)
 {
 	static assert(fieldData.wireType.isBuiltinType,
