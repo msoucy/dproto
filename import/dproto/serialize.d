@@ -8,9 +8,7 @@
 module dproto.serialize;
 
 import dproto.exception;
-
-// nogc compat shim using UDAs (@nogc must appear as function prefix)
-static if (__VERSION__ < 2066) enum nogc;
+import dproto.compat;
 
 import std.algorithm;
 import std.array;
