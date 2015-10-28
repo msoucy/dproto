@@ -7,7 +7,7 @@ d:
   - gdc
   - gdc-4.9.3
   - ldc
-  - ldc-0.15.0
+  - ldc-0.15.1
 before_install:
   - dub fetch doveralls
 script:
