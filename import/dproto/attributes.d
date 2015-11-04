@@ -104,23 +104,23 @@ template ProtoAccessors()
 	}
 }
 
-template ProtoFields(alias self) {
-	import std.traits;
-	import std.typetuple;
-	alias T = typeof(self);
-	template HasProtoField(alias F) {
-		alias __field = Id!(__traits(getMember, self, F));
-		alias HasProtoField = hasValueAnnotation!(__field, ProtoField);
-	}
-	alias ProtoFields = Filter!(HasProtoField, FieldNameTuple!T);
+template ProtoFields(alias self)
+{
+    import std.traits : hasUDA;
+    import std.typetuple : Filter, TypeTuple;
+
+    alias Field(alias F) = Identity!(__traits(getMember, self, F));
+    alias HasProtoField(alias F) = hasValueAnnotation!(Field!F, ProtoField);
+    alias ProtoFields = Filter!(HasProtoField, TypeTuple!(__traits(allMembers, typeof(self))));
 }
 
 template protoDefault(T) {
-	static if(is(T == float) || is(T == double)) {
+	import std.traits : isFloatingPoint;
+	static if(isFloatingPoint!T) {
 		enum protoDefault = 0.0;
-	} else static if(is(T == string)) {
+	} else static if(is(T : const string)) {
 		enum protoDefault = "";
-	} else static if(is(T == ubyte[])) {
+	} else static if(is(T : const ubyte[])) {
 		enum protoDefault = [];
 	} else {
 		enum protoDefault = T.init;
@@ -128,22 +128,25 @@ template protoDefault(T) {
 }
 
 void serializeField(alias field, R)(ref R r) const
-	if(isProtoOutputRange!R)
+    if (isProtoOutputRange!R)
 {
-	alias fieldType = typeof(field);
-	enum fieldData = getAnnotation!(field, ProtoField);
-	bool needsToSerialize = hasValueAnnotation!(field, Required);
-	if(!needsToSerialize) {
-		needsToSerialize = field != protoDefault!fieldType;
-	}
-	if(needsToSerialize) {
-		static if(hasValueAnnotation!(field, Packed) && is(fieldType : T[], T)
-				&& (is(T == enum) || fieldData.wireType.isBuiltinType)) {
-			serializePackedProto!fieldData(field, r);
-		} else {
-			serializeProto!fieldData(field, r);
-		}
-	}
+    alias fieldType = typeof(field);
+    enum fieldData = getAnnotation!(field, ProtoField);
+    // Serialize if required or if the value isn't the (proto) default
+    bool needsToSerialize = hasValueAnnotation!(field, Required) ||
+                            (field != protoDefault!fieldType);
+    // If we still don't need to serialize, we're done here
+    if (!needsToSerialize)
+    {
+        return;
+    }
+    enum isPacked = hasValueAnnotation!(field, Packed);
+    enum isPackType = is(fieldType == enum) || fieldData.wireType.isBuiltinType;
+    static if (isPacked && isArray!fieldType && isPackType)
+        alias serializer = serializePackedProto;
+    else
+        alias serializer = serializeProto;
+    serializer!fieldData(field, r);
 }
 
 void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
