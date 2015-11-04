@@ -11,7 +11,11 @@ module dproto.compat;
 static if (__VERSION__ < 2066) enum nogc;
 
 static if (__VERSION__ < 2068) {
-	import std.traits : staticMap, isNested;
+	// Code from std.traits
+	// Distributed under the Boost Software License
+	// See http://www.boost.org/LICENSE_1_0.txt
+	import std.typetuple : staticMap;
+	import std.traits : isNested;
 	//Required for FieldNameTuple
 	private enum NameOf(alias T) = T.stringof;
 

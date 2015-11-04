@@ -11,6 +11,8 @@ import dproto.serialize;
 import painlesstraits : getAnnotation, hasValueAnnotation;
 import dproto.compat;
 
+import std.traits : Identity;
+
 struct ProtoField
 {
 	string wireType;
@@ -27,8 +29,6 @@ struct ProtoField
 
 struct Required {}
 struct Packed {}
-
-alias Id(alias T) = T;
 
 template TagId(alias T)
 	if(hasValueAnnotation!(T, ProtoField))
@@ -67,7 +67,7 @@ template ProtoAccessors()
 		import dproto.attributes;
 		import std.traits;
 		foreach(__member; ProtoFields!this) {
-			alias __field = Id!(__traits(getMember, this, __member));
+			alias __field = Identity!(__traits(getMember, this, __member));
 			serializeField!__field(__r);
 		}
 	}
@@ -81,7 +81,7 @@ template ProtoAccessors()
 			auto __msgdata = __r.readVarint();
 			bool __matched = false;
 			foreach(__member; ProtoFields!this) {
-				alias __field = Id!(__traits(getMember, this, __member));
+				alias __field = Identity!(__traits(getMember, this, __member));
 				alias __fieldData = getAnnotation!(__field, ProtoField);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
 					enum wt = __fieldData.wireType;
