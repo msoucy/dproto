@@ -9,6 +9,7 @@
  */
 module dproto.intermediate;
 
+import dproto.attributes;
 import dproto.serialize;
 
 import std.algorithm;
@@ -23,8 +24,12 @@ struct Options {
 	alias raw this;
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
-		if(!raw.length) return;
-		sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
+		if(fmt.spec == 'p') {
+			if(!raw.length) return;
+			sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
+		} else {
+			sink.formattedWrite(`["dprotoGenerated": "true"%(, %s : %s%)]`, raw);
+		}
 	}
 }
 
@@ -53,71 +58,12 @@ struct MessageType {
 		foreach(field; fields) field.toString(sink, fmt);
 
 		// Methods for serialization and deserialization.
-		if(!fmt.flDash && fmt.spec != 'p') {
-
-			// JSON stringify
-			import std.json : JSONValue;
-			sink("string toJson() {");
-			sink(` return "{" ~ `);
-			bool firstVal = true;
-			foreach(f; fields) {
-				if(firstVal == true) {
-					firstVal = false;	
-				} else {
-					sink(` "," ~ `);
-				}
-				sink(JSONValue(f.name).toString());
-				sink.formattedWrite(` ~ ":" ~ %s.toJson() ~ `, f.name, f.name);
-			}
-			sink(` "}";`);
-			sink("}\n");
-
-			// Serialize function
-			sink("ubyte[] serialize() const");
-			sink("{ auto __a = appender!(ubyte[]); serializeTo(__a); return __a.data; }\n");
-			sink("void serializeTo(R)(ref R __r) const\n");
-			sink("if(isOutputRange!(R, ubyte)) { ");
-			foreach(f; fields) {
-				sink.formattedWrite("%s.serializeTo(__r);\n", f.name);
-			}
-			sink("}\n");
-			// Deserialize function
-			sink("void deserialize(R)(auto ref R __data)\n");
-			sink("if(isInputRange!R && is(ElementType!R : const ubyte)) {");
-			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				sink.formattedWrite("bool %s_isset = false;\n", f.name);
-			}
-			sink("while(!__data.empty) { ");
-			sink("auto __msgdata = __data.readVarint();\n");
-			sink("switch(__msgdata.msgNum()) { ");
-			foreach(f; fields) { f.getCase(sink); }
-			/// @todo: Safely ignore unrecognized messages
-			sink("default: defaultDecode(__msgdata, __data); break;");
-			// Close the while and switch
-			sink("} } ");
-
-			// Check the required flags (Deprecated in Protobuf 3)
-			foreach(f; fields.filter!(a=>a.requirement==Field.Requirement.REQUIRED)) {
-				sink.formattedWrite(`enforce(%s_isset, `, f.name);
-				sink.formattedWrite(`new DProtoException(`);
-				sink.formattedWrite(`"Did not receive expected input \"%s\""));`, f.name);
-				sink("\n");
-			}
-			sink("}\nthis(R)(auto ref R __data)\n");
-			sink("if(isInputRange!R && is(ElementType!R : const ubyte))");
-			sink("{ deserialize(__data); }\n");
+		if(fmt.spec != 'p') {
+			sink(`mixin dproto.attributes.ProtoAccessors;`);
 		}
 		sink("}\n");
 	}
 
-	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
-	{
-		auto fullname = prefix ~ name ~ ".";
-		foreach(e; enumTypes) e.writeFuncs(fullname, sink);
-		foreach(m; messageTypes) m.writeFuncs(fullname, sink);
-	}
-
-	string toProto() @property const { return "%p".format(this); }
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -145,17 +91,6 @@ struct EnumType {
 		sink("}\n");
 	}
 
-	const void writeFuncs(string prefix, scope void delegate(const(char)[]) sink)
-	{
-		auto fullname = prefix ~ name;
-		sink(fullname);
-		sink(" readProto(string T, R)(ref R src)\n");
-		sink.formattedWrite(`if(T == "%s" && `, fullname);
-		sink(`(isInputRange!R && is(ElementType!R : const ubyte)))`);
-		sink.formattedWrite("{ return src.readVarint().to!(%s)(); }\n", fullname);
-	}
-
-	string toProto() @property const { return "%p".format(this); }
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -206,9 +141,6 @@ struct ProtoPackage {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; ", opt, val);
 			}
-		} else {
-			foreach(e; enumTypes) e.writeFuncs("", sink);
-			foreach(m; messageTypes) m.writeFuncs("", sink);
 		}
 	}
 
@@ -260,37 +192,27 @@ struct Field {
 		}
 	}
 
-	string toProto() @property const { return "%p".format(this); }
 	void getDeclaration(scope void delegate(const(char)[]) sink) const {
-		sink(requirement.to!string.capitalize());
-		sink.formattedWrite(`Buffer!(%s, "%s", `, id, type);
-		if(IsBuiltinType(type)) {
+		if(requirement == Requirement.REQUIRED) {
+			sink("@(dproto.attributes.Required())\n");
+		} else if(requirement == Requirement.REPEATED) {
+			if(options.get("packed", "false") != "false") {
+				sink("@(dproto.attributes.Packed())\n");
+			}
+		}
+		sink("@(dproto.attributes.ProtoField");
+		sink.formattedWrite(`("%s", %s)`, type, id);
+		sink(")\n");
+
+		if(type.isBuiltinType) {
 			sink.formattedWrite(`BuffType!"%s"`, type);
 		} else {
 			sink(type);
 		}
-		sink(", ");
-		sink(options.get("deprecated", "false"));
-		if(requirement == Requirement.OPTIONAL) {
-			sink(", ");
-			if(auto dV = "default" in options) {
-				if(!IsBuiltinType(type)) {
-					sink.formattedWrite("%s.", type);
-				}
-				sink(*dV);
-			} else {
-				if(IsBuiltinType(type)) {
-					sink.formattedWrite(`(BuffType!"%s")`, type);
-				} else {
-					sink.formattedWrite("%s", type);
-				}
-				sink(".init");
-			}
-		} else if(requirement == Requirement.REPEATED) {
-			sink(", ");
-			sink(options.get("packed", "false"));
+		if(requirement == Requirement.REPEATED) {
+			sink("[]");
 		}
-		sink.formattedWrite(") %s;\n", name);
+		sink.formattedWrite(" %s;\n\n", name);
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);

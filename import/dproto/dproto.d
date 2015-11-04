@@ -296,7 +296,9 @@ unittest
 	assert(t.name == "");
 	assert(t.id == 0);
 	assert(t.phone.length == 0);
-	assert(t.toJson() == `{name:"",id:0,email:null,phone:[]}`);
+	version(Have_painlessjson) {
+		assert(t.toJson() == `{"email":"","id":0,"name":"","phone":[]}`);
+	}
 
 	t.name = "Max Musterman";
 	assert(t.name == "Max Musterman");
@@ -305,8 +307,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -316,22 +318,24 @@ unittest
 
 	pn1.type = PhoneType.WORK;
 	assert(pn1.type == PhoneType.WORK);
+	assert(pn1.type);
 	assert(pn1.type == 2);
-	assert(pn1.type.exists());
 
 	t.phone ~= pn1;
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	assert(t.toJson() == `{name:"Max Musterman",id:3,email:"Max.Musterman@example.com",phone:[{number:"0123456789",type:2}]}`);
+	version(Have_painlessjson) {
+		assert(t.toJson() == `{"email":"Max.Musterman@example.com","id":3,"name":"Max Musterman","phone":[{"number":"0123456789","type":2}]}`);
+	}
 
-	pn1.type.clean();
+	pn1.type = pn1.type.init;
 	assert(pn1.type == PhoneType.HOME);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 }
 
@@ -374,8 +378,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -385,10 +389,10 @@ unittest
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 
 	AddressBook addressbook;
@@ -402,7 +406,7 @@ unittest
 
 unittest
 {
-	 mixin ProtocolBufferFromString!"
+	mixin ProtocolBufferFromString!"
 	enum PhoneType {
 		MOBILE = 0;
 		HOME = 0;
@@ -446,14 +450,14 @@ unittest
 
 	ubyte[] serializedObject = addressbook.serialize();
 
-	AddressBook addressbook2 = AddressBook(serializedObject);
+	AddressBook addressbook2 = AddressBook.fromProto(serializedObject);
 	assert(addressbook2.person.length == 2);
 	foreach (t2; addressbook2.person[0..1])
 	{
 		assert(t2.name == "Max Musterman");
 		assert(t2.id == 3);
+		assert(t2.email);
 		assert(t2.email == "test@example.com");
-		assert(t2.email.exists());
 		assert(t2.phone[0].number == "0123456789");
 		assert(t2.phone[0].type == PhoneType.WORK);
 		assert(t2.phone[1].number == "0123456789");
@@ -507,8 +511,8 @@ unittest
 	assert(t.id == 3);
 
 	t.email = "Max.Musterman@example.com";
+	assert(t.email);
 	assert(t.email == "Max.Musterman@example.com");
-	assert(t.email.exists());
 
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
@@ -519,19 +523,19 @@ unittest
 	pn1.type = Person.PhoneType.WORK;
 	assert(pn1.type == Person.PhoneType.WORK);
 	assert(pn1.type == 2);
-	assert(pn1.type.exists());
+	assert(pn1.type);
 
 	t.phone ~= pn1;
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	pn1.type.clean();
+	pn1.type = pn1.type.init;
 	assert(pn1.type == Person.PhoneType.HOME);
 
-	t.phone.clean();
+	t.phone = t.phone.init;
 	assert(t.phone.length == 0);
 
-	t.email.clean();
+	t.email = t.email.init;
 	assert(t.email == "");
 
 	AddressBook addressbook;
@@ -599,7 +603,6 @@ unittest
 
 unittest
 {
-	import dproto.buffers;
 	import dproto.exception;
 	import dproto.serialize;
 	import dproto.parse;
@@ -667,6 +670,7 @@ unittest
 
 	DNSPayload p2;
 	p2.deserialize(buf);
+	assert(p1 == p2);
 }
 
 unittest
@@ -675,4 +679,18 @@ unittest
 		message Person {
 			required uint32 id = 1;
 		}";
+}
+
+unittest {
+	mixin ProtocolBufferFromString!`
+		message TestStructure
+		{
+			optional string optional_string = 1;
+			required string required_string = 2;
+			repeated string repeated_string = 3;
+		}
+	`;
+	assert(TagId!(TestStructure.optional_string) == 1);
+	assert(TagId!(TestStructure.required_string) == 2);
+	assert(TagId!(TestStructure.repeated_string) == 3);
 }

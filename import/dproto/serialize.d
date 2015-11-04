@@ -8,9 +8,7 @@
 module dproto.serialize;
 
 import dproto.exception;
-
-// nogc compat shim using UDAs (@nogc must appear as function prefix)
-static if (__VERSION__ < 2066) enum nogc;
+import dproto.compat;
 
 import std.algorithm;
 import std.array;
@@ -28,18 +26,18 @@ import std.traits;
  *  	type = The type to check for
  * Returns: True if the type is a protocol buffer primitive
  */
-bool IsBuiltinType(string type) @safe pure nothrow {
+bool isBuiltinType(string type) @safe pure nothrow {
 	return ["int32" , "sint32", "int64", "sint64", "uint32", "uint64", "bool",
 			"fixed64", "sfixed64", "double", "bytes", "string",
 			"fixed32", "sfixed32", "float"].canFind(type);
 }
 
 unittest {
-	assert(IsBuiltinType("sfixed32") == true);
-	assert(IsBuiltinType("double") == true);
-	assert(IsBuiltinType("string") == true);
-	assert(IsBuiltinType("int128") == false);
-	assert(IsBuiltinType("quad") == false);
+	assert(isBuiltinType("sfixed32") == true);
+	assert(isBuiltinType("double") == true);
+	assert(isBuiltinType("string") == true);
+	assert(isBuiltinType("int128") == false);
+	assert(isBuiltinType("quad") == false);
 }
 
 /*******************************************************************************
@@ -105,18 +103,21 @@ void defaultDecode(R)(ulong header, ref R data)
 /*******************************************************************************
  * Maps the given type string to the wire type number
  */
-template MsgType(string T) {
-	static if(T == "int32"  || T == "sint32" || T == "int64" || T == "sint64" ||
-			T == "uint32" || T == "uint64" || T == "bool") {
-		enum MsgType = 0;
-	} else static if(T == "fixed64" || T == "sfixed64" || T == "double") {
-		enum MsgType = 1;
-	} else static if(T == "bytes" || T == "string") {
-		enum MsgType = 2;
-	} else static if(T == "fixed32" || T == "sfixed32" || T == "float") {
-		enum MsgType = 5;
-	} else {
-		enum MsgType = 2;
+@nogc
+auto msgType(string T) pure nothrow @safe {
+	switch(T) {
+		case "int32", "sint32", "uint32":
+		case "int64", "sint64", "uint64":
+		case "bool":
+			return 0;
+		case "fixed64", "sfixed64", "double":
+			return 1;
+		case "bytes", "string":
+			return 2;
+		case "fixed32", "sfixed32", "float":
+			return 5;
+		default:
+			return 2;
 	}
 }
 
@@ -370,33 +371,29 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
  * Returns: The decoded value
  */
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
-{
-	return src.readVarint().to!(BuffType!T)();
-}
-
-/// Ditto
-BuffType!T readProto(string T, R)(ref R src)
-	if((T == "sint32" || T == "sint64")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && (T == "sint32" || T == "sint64"))
 {
 	return src.readVarint().fromZigZag().to!(BuffType!T)();
 }
 
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "double" || T == "fixed64" || T == "sfixed64" ||
-		T == "float" || T == "fixed32" || T == "sfixed32")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && T.msgType == "int32".msgType)
+{
+	return src.readVarint().to!(BuffType!T)();
+}
+
+/// Ditto
+BuffType!T readProto(string T, R)(ref R src)
+	if(isProtoInputRange!R &&
+	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
 
 /// Ditto
 BuffType!T readProto(string T, R)(ref R src)
-	if((T == "string" || T == "bytes")
-	   && (isInputRange!R && is(ElementType!R : const ubyte)))
+	if(isProtoInputRange!R && T.msgType == "string".msgType)
 {
 	BuffType!T ret;
 	auto len = src.readProto!"uint32"();
@@ -426,9 +423,15 @@ enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
  *     src = The raw data
  * Returns: The encoded value
  */
+void writeProto(string T, R)(ref R r, const BuffType!T src)
+	if(isProtoOutputRange!R && (T == "sint32" || T == "sint64"))
+{
+	toVarint(r, src.toZigZag);
+}
+
+/// Ditto
 void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isProtoOutputRange!R &&
-	   (T == "int32" || T == "int64" || T == "uint32" || T == "uint64" || T == "bool"))
+	if(isProtoOutputRange!R && T.msgType == "int32".msgType)
 {
 	toVarint(r, src);
 }
@@ -436,25 +439,27 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 /// Ditto
 void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isProtoOutputRange!R &&
-	   (T == "sint32" || T == "sint64"))
-{
-	toVarint(r, src.toZigZag);
-}
-
-/// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isProtoOutputRange!R &&
-	   (T == "double" || T == "fixed64" || T == "sfixed64" ||
-		T == "float" || T == "fixed32" || T == "sfixed32"))
+	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
 	r.put(src.nativeToLittleEndian!(BuffType!T)[]);
 }
 
 /// Ditto
 void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isProtoOutputRange!R &&
-	   (T == "string" || T == "bytes"))
+	if(isProtoOutputRange!R && T.msgType == "string".msgType)
 {
 	toVarint(r, src.length);
 	r.put(cast(ubyte[])src);
+}
+
+/*******************************************************************************
+ * Simple range that ignores data but counts the length
+ */
+struct CntRange
+{
+@nogc:
+	size_t cnt;
+	void put(in ubyte) { ++cnt; }
+	void put(in ubyte[] ary) { cnt += ary.length; }
+	alias cnt this;
 }
