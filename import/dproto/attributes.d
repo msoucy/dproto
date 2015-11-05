@@ -106,12 +106,11 @@ template ProtoAccessors()
 
 template ProtoFields(alias self)
 {
-	import std.traits : hasUDA;
-	import std.typetuple : Filter, AliasSeq;
+	import std.typetuple : Filter, TypeTuple;
 
 	alias Field(alias F) = Identity!(__traits(getMember, self, F));
 	alias HasProtoField(alias F) = hasValueAnnotation!(Field!F, ProtoField);
-	alias ProtoFields = Filter!(HasProtoField, AliasSeq!(__traits(allMembers, typeof(self))));
+	alias ProtoFields = Filter!(HasProtoField, TypeTuple!(__traits(allMembers, typeof(self))));
 }
 
 template protoDefault(T) {
