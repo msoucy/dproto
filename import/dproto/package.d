@@ -9,3 +9,4 @@
  */
 module dproto;
 public import dproto.dproto;
+public import dproto.unittests;
