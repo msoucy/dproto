@@ -694,3 +694,31 @@ unittest {
 	assert(TagId!(TestStructure.required_string) == 2);
 	assert(TagId!(TestStructure.repeated_string) == 3);
 }
+
+unittest
+{
+    mixin ProtocolBufferFromString!"
+        message Stats {
+            optional int32 agility = 1;
+            optional int32 stamina = 2;
+        }
+        message Character {
+            optional string name = 1;
+            optional Stats stats = 2;
+        }
+        message Account {
+            optional string owner = 1;
+            optional Character main = 2;
+        }
+    ";
+    const int agility = 200;
+    auto acct = Account();
+    auto main = Character();
+    main.name = "Hogan";
+    main.stats.agility = agility;
+    acct.main = main;
+    auto ser = acct.serialize();
+    Account acct_rx;
+    acct_rx.deserialize(ser);
+    assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d", agility, acct_rx.main.stats.agility));
+}
