@@ -204,12 +204,18 @@ struct Field {
 		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
+		if(requirement == Requirement.OPTIONAL) {
+			sink(`std.typecons.Nullable!(`);
+		}
 		if(type.isBuiltinType) {
 			sink.formattedWrite(`BuffType!"%s"`, type);
 		} else {
 			sink(type);
 		}
-		if(requirement == Requirement.REPEATED) {
+		if(requirement == Requirement.OPTIONAL) {
+			sink(`)`);
+		}
+		else if(requirement == Requirement.REPEATED) {
 			sink("[]");
 		}
 		sink.formattedWrite(" %s;\n\n", name);
