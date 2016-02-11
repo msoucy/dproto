@@ -667,10 +667,12 @@ unittest
     auto acct = Account();
     auto main = Character();
     main.name = "Hogan";
+    main.stats = Stats();
     main.stats.agility = agility;
     acct.main = main;
     auto ser = acct.serialize();
     Account acct_rx;
     acct_rx.deserialize(ser);
     assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d", agility, acct_rx.main.stats.agility));
+
 }

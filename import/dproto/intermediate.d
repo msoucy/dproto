@@ -204,18 +204,22 @@ struct Field {
 		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
-		if(requirement == Requirement.OPTIONAL) {
-			sink(`std.typecons.Nullable!(`);
+		bool wrap_with_nullable =
+			requirement == Requirement.OPTIONAL &&
+			! type.isBuiltinType();
+
+		if(wrap_with_nullable) {
+			sink(`dproto.serialize.PossiblyNullable!(`);
 		}
 		if(type.isBuiltinType) {
 			sink.formattedWrite(`BuffType!"%s"`, type);
 		} else {
 			sink(type);
 		}
-		if(requirement == Requirement.OPTIONAL) {
+		if(wrap_with_nullable) {
 			sink(`)`);
 		}
-		else if(requirement == Requirement.REPEATED) {
+		if(requirement == Requirement.REPEATED) {
 			sink("[]");
 		}
 		sink.formattedWrite(" %s;\n\n", name);

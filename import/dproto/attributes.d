@@ -133,19 +133,26 @@ void serializeField(alias field, R)(ref R r) const
 	alias fieldType = typeof(field);
 	enum fieldData = getAnnotation!(field, ProtoField);
 	// Serialize if required or if the value isn't the (proto) default
-	bool needsToSerialize = hasValueAnnotation!(field, Required) ||
-	                        (field != protoDefault!fieldType);
-	static if(is(fieldType : Nullable!U, U)) {
-		needsToSerialize |= !field.isNull;
-		const rawField = field.get;
+	enum isNullable = is(fieldType == Nullable!U, U);
+	bool needsToSerialize;
+	static if (isNullable) {
+		needsToSerialize = ! field.isNull;
 	} else {
-		const rawField = field;
+		needsToSerialize = hasValueAnnotation!(field, Required)
+		    || (field != protoDefault!fieldType);
 	}
+
 	// If we still don't need to serialize, we're done here
 	if (!needsToSerialize)
 	{
 		return;
 	}
+	static if(isNullable) {
+		const rawField = field.get;
+	} else {
+		const rawField = field;
+	}
+
 	enum isPacked = hasValueAnnotation!(field, Packed);
 	enum isPackType = is(fieldType == enum) || fieldData.wireType.isBuiltinType;
 	static if (isPacked && isArray!fieldType && isPackType)
