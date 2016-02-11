@@ -167,7 +167,7 @@ struct Field {
 	uint id;
 	Options options;
 
-	@property const bool hasDefaultValue() {
+	const bool hasDefaultValue() {
 		return null != ("default" in options);
 	}
 	const string defaultValue() {
