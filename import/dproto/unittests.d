@@ -676,3 +676,37 @@ unittest
     assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d", agility, acct_rx.main.stats.agility));
 
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!q{
+		enum Enum {
+			A = 0;
+			B = 1;
+			C = 2;
+		}
+
+		message Msg {
+			optional Enum unset = 1;
+			optional Enum isset_first = 2 [default = A];
+			optional Enum isset_last = 3 [default = C];
+			required Enum unset_required = 4;
+			required Enum isset_required = 5 [default = B];
+			optional int32 i1 = 6 [default = 42];
+			optional int32 i2 = 7;
+			required int32 i3 = 8 [default = 24];
+			required int32 i4 = 9;
+		}
+	};
+
+	Msg msg;
+	assert(msg.unset == Enum.A);
+	assert(msg.isset_first == Enum.A);
+	assert(msg.isset_last == Enum.C);
+	assert(msg.unset_required == Enum.A);
+	assert(msg.isset_required == Enum.B);
+	assert(msg.i1 == 42);
+	assert(msg.i2 == typeof(msg.i2).init);
+	assert(msg.i3 == 24);
+	assert(msg.i4 == typeof(msg.i4).init);
+}

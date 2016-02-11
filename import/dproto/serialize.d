@@ -52,10 +52,15 @@ template PossiblyNullable(T) {
 template UnspecifiedDefaultValue(T) {
 	static if(is(T == enum)) {
 		import std.traits : EnumMembers;
-		enum DefaultValue = EnumMembers!(T)[0];
+		enum UnspecifiedDefaultValue = EnumMembers!(T)[0];
 	} else {
-		enum DefaultValue = T.init;
+		enum UnspecifiedDefaultValue = T.init;
 	}
+}
+
+template SpecifiedDefaultValue(T, string value) {
+	import std.conv : to;
+	enum SpecifiedDefaultValue = to!T(value);
 }
 
 /*******************************************************************************

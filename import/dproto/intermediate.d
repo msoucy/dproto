@@ -167,6 +167,13 @@ struct Field {
 	uint id;
 	Options options;
 
+	@property const bool hasDefaultValue() {
+		return null != ("default" in options);
+	}
+	const string defaultValue() {
+		return options["default"];
+	}
+
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
 		switch(fmt.spec) {
@@ -211,18 +218,28 @@ struct Field {
 		if(wrap_with_nullable) {
 			sink(`dproto.serialize.PossiblyNullable!(`);
 		}
+		string typestr = type;
 		if(type.isBuiltinType) {
-			sink.formattedWrite(`BuffType!"%s"`, type);
-		} else {
-			sink(type);
+			typestr = format(`BuffType!"%s"`, type);
 		}
+
+		sink(typestr);
+
 		if(wrap_with_nullable) {
 			sink(`)`);
 		}
 		if(requirement == Requirement.REPEATED) {
 			sink("[]");
 		}
-		sink.formattedWrite(" %s;\n\n", name);
+		sink.formattedWrite(" %s", name);
+		if (requirement != Requirement.REPEATED) {
+			if (hasDefaultValue) {
+				sink.formattedWrite(`= SpecifiedDefaultValue!(%s, "%s")`, typestr, defaultValue);
+			} else if(type.isBuiltinType || ! wrap_with_nullable) {
+				sink.formattedWrite("= UnspecifiedDefaultValue!(%s)", typestr);
+			}
+		}
+		sink(";\n\n");
 	}
 	void getCase(scope void delegate(const(char)[]) sink) const {
 		sink.formattedWrite("case %s:\n", id);
@@ -303,5 +320,4 @@ struct Service {
 		foreach(m; rpc) m.toString(sink, fmt);
 		sink("}\n");
 	}
-
 }
