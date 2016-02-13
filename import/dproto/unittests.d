@@ -679,7 +679,7 @@ unittest
 
 unittest
 {
-	mixin ProtocolBufferFromString!q{
+	enum pbstring = q{
 		enum Enum {
 			A = 0;
 			B = 1;
@@ -698,6 +698,14 @@ unittest
 			required int32 i4 = 9;
 		}
 	};
+
+	// Force code coverage in doveralls
+	import std.string;
+	import std.format;
+	import dproto.parse;
+	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", pbstring));
+
+	mixin ProtocolBufferFromString!pbstring;
 
 	Msg msg;
 	assert(msg.unset == Enum.A);
