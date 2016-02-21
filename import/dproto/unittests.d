@@ -642,6 +642,7 @@ unittest {
 			repeated string repeated_string = 3;
 		}
 	`;
+	import dproto.attributes : TagId;
 	assert(TagId!(TestStructure.optional_string) == 1);
 	assert(TagId!(TestStructure.required_string) == 2);
 	assert(TagId!(TestStructure.repeated_string) == 3);
@@ -673,6 +674,7 @@ unittest
     auto ser = acct.serialize();
     Account acct_rx;
     acct_rx.deserialize(ser);
+    import std.string : format;
     assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d", agility, acct_rx.main.stats.agility));
 
 }
