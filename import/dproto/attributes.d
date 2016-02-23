@@ -12,6 +12,7 @@ import painlesstraits : getAnnotation, hasValueAnnotation;
 import dproto.compat;
 
 import std.traits : Identity;
+import std.typecons : Nullable;
 
 struct ProtoField
 {
@@ -132,20 +133,33 @@ void serializeField(alias field, R)(ref R r) const
 	alias fieldType = typeof(field);
 	enum fieldData = getAnnotation!(field, ProtoField);
 	// Serialize if required or if the value isn't the (proto) default
-	bool needsToSerialize = hasValueAnnotation!(field, Required) ||
-	                        (field != protoDefault!fieldType);
+	enum isNullable = is(fieldType == Nullable!U, U);
+	bool needsToSerialize;
+	static if (isNullable) {
+		needsToSerialize = ! field.isNull;
+	} else {
+		needsToSerialize = hasValueAnnotation!(field, Required)
+		    || (field != protoDefault!fieldType);
+	}
+
 	// If we still don't need to serialize, we're done here
 	if (!needsToSerialize)
 	{
 		return;
 	}
+	static if(isNullable) {
+		const rawField = field.get;
+	} else {
+		const rawField = field;
+	}
+
 	enum isPacked = hasValueAnnotation!(field, Packed);
 	enum isPackType = is(fieldType == enum) || fieldData.wireType.isBuiltinType;
 	static if (isPacked && isArray!fieldType && isPackType)
 		alias serializer = serializePackedProto;
 	else
 		alias serializer = serializeProto;
-	serializer!fieldData(field, r);
+	serializer!fieldData(rawField, r);
 }
 
 void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
@@ -164,7 +178,11 @@ void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
 	if(isProtoInputRange!R)
 {
 	import std.conv : to;
-	static if(wireType.isBuiltinType) {
+	static if(is(T : Nullable!U, U)) {
+		U t_tmp;
+		t_tmp.putSingleProtoVal!wireType(r);
+		t = t_tmp;
+	} else static if(wireType.isBuiltinType) {
 		t = r.readProto!wireType().to!T();
 	} else static if(is(T == enum)) {
 		t = r.readProto!ENUM_SERIALIZATION().to!T();

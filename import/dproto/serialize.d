@@ -40,6 +40,29 @@ unittest {
 	assert(isBuiltinType("quad") == false);
 }
 
+template PossiblyNullable(T) {
+	static if(is(T == enum)) {
+		alias PossiblyNullable = T;
+	} else {
+		import std.typecons : Nullable;
+		alias PossiblyNullable = Nullable!T;
+	}
+}
+
+template UnspecifiedDefaultValue(T) {
+	static if(is(T == enum)) {
+		import std.traits : EnumMembers;
+		enum UnspecifiedDefaultValue = EnumMembers!(T)[0];
+	} else {
+		enum UnspecifiedDefaultValue = T.init;
+	}
+}
+
+template SpecifiedDefaultValue(T, string value) {
+	import std.conv : to;
+	enum SpecifiedDefaultValue = to!T(value);
+}
+
 /*******************************************************************************
  * Maps the given type string to the data type it represents
  */
