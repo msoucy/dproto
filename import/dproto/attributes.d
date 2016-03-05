@@ -182,6 +182,8 @@ void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
 		U t_tmp;
 		t_tmp.putSingleProtoVal!wireType(r);
 		t = t_tmp;
+	} else static if(isOptionalField!T) {
+		putSingleProtoVal!wireType(t.value, r);
 	} else static if(wireType.isBuiltinType) {
 		t = r.readProto!wireType().to!T();
 	} else static if(is(T == enum)) {
@@ -192,10 +194,23 @@ void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
 	}
 }
 
+bool isOptionalField(T)() {
+	import std.traits : TemplateOf;
+
+	static if(__traits(compiles, TemplateOf!T) &&
+			__traits(isSame, TemplateOf!T, OptionalField))
+		return true;
+	else
+		return false;
+}
+
 void serializeProto(alias fieldData, T, R)(const T data, ref R r)
 	if(isProtoOutputRange!R)
 {
-	static if(is(T : const string)) {
+	static if(isOptionalField!T) {
+		serializeProto!(fieldData)(data.value, r);
+	}
+	else static if(is(T : const string)) {
 		r.toVarint(fieldData.header);
 		r.writeProto!"string"(data);
 	} else static if(is(T : const(ubyte)[])) {

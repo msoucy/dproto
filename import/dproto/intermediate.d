@@ -211,13 +211,10 @@ struct Field {
 		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
-		bool wrap_with_nullable =
-			requirement == Requirement.OPTIONAL &&
-			! type.isBuiltinType();
-
-		if(wrap_with_nullable) {
-			sink(`dproto.serialize.PossiblyNullable!(`);
+		if(requirement == Requirement.OPTIONAL) {
+			sink(`dproto.serialize.OptionalField!(`);
 		}
+
 		string typestr = type;
 		if(type.isBuiltinType) {
 			typestr = format(`BuffType!"%s"`, type);
@@ -225,17 +222,25 @@ struct Field {
 
 		sink(typestr);
 
-		if(wrap_with_nullable) {
+		if(requirement == Requirement.OPTIONAL) {
+
+			if (hasDefaultValue) {
+				sink.formattedWrite(`, SpecifiedDefaultValue!(%s, "%s")`, typestr, defaultValue);
+			} else if(type.isBuiltinType) {
+				sink.formattedWrite(", UnspecifiedDefaultValue!(%s)", typestr);
+			}
+
 			sink(`)`);
 		}
 		if(requirement == Requirement.REPEATED) {
 			sink("[]");
 		}
 		sink.formattedWrite(" %s", name);
-		if (requirement != Requirement.REPEATED) {
+		if (requirement != Requirement.REPEATED &&
+			requirement != Requirement.OPTIONAL) {
 			if (hasDefaultValue) {
 				sink.formattedWrite(`= SpecifiedDefaultValue!(%s, "%s")`, typestr, defaultValue);
-			} else if(type.isBuiltinType || ! wrap_with_nullable) {
+			} else if(type.isBuiltinType) {
 				sink.formattedWrite("= UnspecifiedDefaultValue!(%s)", typestr);
 			}
 		}
