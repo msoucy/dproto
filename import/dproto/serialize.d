@@ -49,6 +49,35 @@ template PossiblyNullable(T) {
 	}
 }
 
+
+struct OptionalField(T, T default_val = T.init) {
+	private bool is_set = false;
+	public T value = default_val;
+
+	alias value this;
+
+	auto opGet ( ) {
+		return value;
+	}
+
+	auto opAssign ( T val ) {
+		this.is_set = true;
+		this.value = val;
+
+		return this;
+	}
+
+	bool exists ( ) const {
+		return this.is_set;
+	}
+
+	void unset ( ) {
+		this.value = default_val;
+		this.is_set = false;
+	}
+}
+
+
 template UnspecifiedDefaultValue(T) {
 	static if(is(T == enum)) {
 		import std.traits : EnumMembers;
