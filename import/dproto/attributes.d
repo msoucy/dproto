@@ -11,7 +11,7 @@ import dproto.serialize;
 import painlesstraits : getAnnotation, hasValueAnnotation;
 import dproto.compat;
 
-import std.traits : Identity;
+import std.traits : isArray, Identity;
 import std.typecons : Nullable;
 
 struct ProtoField
