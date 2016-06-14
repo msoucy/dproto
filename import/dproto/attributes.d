@@ -14,6 +14,8 @@ import dproto.compat;
 import std.traits : isArray, Identity;
 import std.typecons : Nullable;
 
+@safe:
+
 struct ProtoField
 {
 	string wireType;
@@ -39,6 +41,10 @@ template TagId(alias T)
 
 template ProtoAccessors()
 {
+
+	import painlesstraits : getAnnotation, hasValueAnnotation;
+
+@safe:
 
 	static auto fromProto(R)(auto ref R data)
 		if(isProtoInputRange!R)
