@@ -134,6 +134,12 @@ struct ProtoPackage {
 				sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, dep);
 			}
 		}
+
+		// Import attributes package.
+		if(!enumTypes.empty || !messageTypes.empty || !rpcServices.empty) {
+			sink.formattedWrite(`import dproto.attributes;`);
+		}
+
 		foreach(e; enumTypes) e.toString(sink, fmt);
 		foreach(m; messageTypes) m.toString(sink, fmt);
 		foreach(r; rpcServices) r.toString(sink, fmt);

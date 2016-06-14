@@ -42,6 +42,8 @@ template TagId(alias T)
 template ProtoAccessors()
 {
 
+	import painlesstraits : getAnnotation, hasValueAnnotation;
+
 @safe:
 
 	static auto fromProto(R)(auto ref R data)
