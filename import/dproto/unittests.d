@@ -501,6 +501,7 @@ unittest
 	static struct OutBuf
 	{
 	@nogc:
+	@safe:
 		void put(in ubyte) {}
 		void put(in ubyte[]) {}
 	}

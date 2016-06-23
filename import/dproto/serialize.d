@@ -255,7 +255,7 @@ long readVarint(R)(ref R src)
  *  	src = The value to encode
  * Returns: The created VarInt
  */
-void toVarint(R, T)(ref R r, T src) @trusted @property
+void toVarint(R, T)(ref R r, T src) @safe @property
 	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
 {
 	immutable ubyte maxMask = 0b_1000_0000;
@@ -482,7 +482,7 @@ struct CntRange
 {
 @nogc:
 	size_t cnt;
-	void put(in ubyte) { ++cnt; }
-	void put(in ubyte[] ary) { cnt += ary.length; }
+	void put(in ubyte) @safe { ++cnt; }
+	void put(in ubyte[] ary) @safe { cnt += ary.length; }
 	alias cnt this;
 }
