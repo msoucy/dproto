@@ -165,7 +165,7 @@ void serializeField(alias field, R)(ref R r) const
 void putProtoVal(alias __field, R)(auto ref R r)
 	if (isProtoInputRange!R)
 {
-	import std.range.primitives : ElementType;
+	import std.range : ElementType;
 	import std.traits : isSomeString, isDynamicArray;
 
 	alias T = typeof(__field);
