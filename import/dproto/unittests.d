@@ -785,5 +785,5 @@ unittest
 
 	auto serialized_foo = foo.serialize();
 
-	auto foo2 = Foo(serialized_foo); // FAILS
+	auto foo2 = Foo(serialized_foo);
 }
