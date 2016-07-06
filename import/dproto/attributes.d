@@ -86,7 +86,8 @@ template ProtoAccessors()
 				alias __fieldData = getAnnotation!(__field, ProtoField);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
 					enum wt = __fieldData.wireType;
-					__field.putProtoVal!wt(__r);
+					alias __isPacked = hasValueAnnotation!(__field, Packed);
+					__field.putProtoVal!(wt, __isPacked)(__r);
 					__matched = true;
 				}
 			}
@@ -162,13 +163,21 @@ void serializeField(alias field, R)(ref R r) const
 	serializer!fieldData(rawField, r);
 }
 
-void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
+void putProtoVal(string wireType, alias __isPacked, T, R)(ref T t, auto ref R r)
 	if(isProtoInputRange!R)
 {
 	static if(is(T : U[], U) && !(is(T : string) || is(T : const(ubyte)[]))) {
 		U u;
-		u.putSingleProtoVal!wireType(r);
-		t ~= u;
+		static if(__isPacked) {
+			auto nelems = r.readVarint();
+			for(auto n = 0; n < nelems; n++) {
+				u.putSingleProtoVal!wireType(r);
+				t ~= u;
+			}
+		} else {
+			u.putSingleProtoVal!wireType(r);
+			t ~= u;
+		}
 	} else {
 		t.putSingleProtoVal!wireType(r);
 	}

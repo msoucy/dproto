@@ -771,3 +771,19 @@ unittest
     }
 };`)), "Malformed proto structure accepted");
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!`
+	message Foo {
+		repeated uint32 arr = 1 [packed=true];
+	}
+`;
+
+	Foo foo;
+	foo.arr = [1];
+
+	auto serialized_foo = foo.serialize();
+
+	auto foo2 = Foo(serialized_foo); // FAILS
+}
