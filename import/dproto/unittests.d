@@ -760,3 +760,14 @@ message HeaderBBox {
 	assert(headerBBox.top == -32);
 	assert(headerBBox.bottom == -24);
 }
+
+unittest
+{
+	assert(!__traits(compiles,
+	mixin(`mixin ProtocolBufferFromString!q{
+    message One {
+        required string a;
+        required int32 b;
+    }
+};`)), "Malformed proto structure accepted");
+}
