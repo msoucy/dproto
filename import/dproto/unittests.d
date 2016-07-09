@@ -735,3 +735,28 @@ message Info {
 	assertThrown!DProtoReservedWordException(
 			ParseProtoSchema("<none>", pbstring));
 }
+
+unittest
+{
+	mixin ProtocolBufferFromString!`
+message HeaderBBox {
+    required sint64 left = 1;
+    required sint64 right = 2;
+    required sint64 top = 3;
+    required sint64 bottom = 4;
+}`;
+	HeaderBBox headerBBox;
+
+	headerBBox.left = 10;
+	headerBBox.right = 5;
+	headerBBox.top = -32;
+	headerBBox.bottom = -24;
+
+	auto hbb = headerBBox.serialize();
+	headerBBox = HeaderBBox(hbb); // Error occurred here
+
+	assert(headerBBox.left == 10);
+	assert(headerBBox.right == 5);
+	assert(headerBBox.top == -32);
+	assert(headerBBox.bottom == -24);
+}
