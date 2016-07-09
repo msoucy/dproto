@@ -554,7 +554,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		Exception unexpected(string message) {
-			throw new DProtoException("Syntax error in %s at %d:%d: %s"
+			return new DProtoException("Syntax error in %s at %d:%d: %s"
 					.format(fileName, line+1, (pos - lineStart + 1), message));
 		}
 

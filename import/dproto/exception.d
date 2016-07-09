@@ -11,13 +11,13 @@ module dproto.exception;
  * Basic exception, something went wrong with creating a buffer struct
  */
 class DProtoException : Exception {
-	this(string msg, string file=__FILE__, int line=__LINE__) {
+	this(string msg, string file=__FILE__, ulong line=__LINE__) {
 		super(msg, file, line);
 	}
 }
 
 class DProtoReservedWordException : DProtoException {
-	this(string word, string file=__FILE__, int line=__LINE__) {
+	this(string word, string file=__FILE__, ulong line=__LINE__) {
 		super("Reserved word: "~word, file, line);
 		keyword = word;
 	}
