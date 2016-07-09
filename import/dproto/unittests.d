@@ -732,7 +732,6 @@ message Info {
    optional int32 version = 1 [default = -1];
 }
 	};
-	ParseProtoSchema("<none>", pbstring);
 	assertThrown!DProtoReservedWordException(
 			ParseProtoSchema("<none>", pbstring));
 }
