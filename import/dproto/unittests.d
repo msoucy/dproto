@@ -721,3 +721,17 @@ unittest
 	assert(msg.i3 == 24);
 	assert(msg.i4 == typeof(msg.i4).init);
 }
+
+unittest
+{
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+	enum pbstring = q{
+message Info {
+   optional int32 version = 1 [default = -1];
+}
+	};
+	assertThrown!DProtoReservedWordException(
+			ParseProtoSchema("<none>", pbstring));
+}

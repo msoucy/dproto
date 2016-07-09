@@ -12,6 +12,14 @@ module dproto.exception;
  */
 class DProtoException : Exception {
 	this(string msg, string file=__FILE__, int line=__LINE__) {
-    	super(msg, file, line);
+		super(msg, file, line);
 	}
+}
+
+class DProtoReservedWordException : DProtoException {
+	this(string word, string file=__FILE__, int line=__LINE__) {
+		super("Reserved word: "~word, file, line);
+		keyword = word;
+	}
+	string keyword;
 }
