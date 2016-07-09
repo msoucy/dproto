@@ -84,9 +84,8 @@ template ProtoAccessors()
 			foreach(__member; ProtoFields!this) {
 				alias __field = Identity!(__traits(getMember, this, __member));
 				alias __fieldData = getAnnotation!(__field, ProtoField);
-				alias __isPacked = hasValueAnnotation!(__field, Packed);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
-					__r.putProtoVal!(__field)();
+					__r.putProtoVal!(__field)(__msgdata);
 					__matched = true;
 				}
 			}
@@ -162,7 +161,7 @@ void serializeField(alias field, R)(ref R r) const
 	serializer!fieldData(rawField, r);
 }
 
-void putProtoVal(alias __field, R)(auto ref R r)
+void putProtoVal(alias __field, R)(auto ref R r, ulong __msgdata)
 	if (isProtoInputRange!R)
 {
 	import std.range : ElementType;
@@ -174,13 +173,10 @@ void putProtoVal(alias __field, R)(auto ref R r)
 	static if (isDynamicArray!T && !(isSomeString!T || isBinString!T))
 	{
 		ElementType!T u;
-		static if (hasValueAnnotation!(__field, Packed))
+		ulong nelems = 1;
+		if (wireType.msgType != PACKED_MSG_TYPE && __msgdata.wireType == PACKED_MSG_TYPE)
 		{
-			auto nelems = r.readVarint();
-		}
-		else
-		{
-			auto nelems = 1;
+			nelems = r.readVarint();
 		}
 		for (auto n = 0; n < nelems; n++)
 		{

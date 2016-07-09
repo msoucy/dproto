@@ -787,3 +787,25 @@ unittest
 
 	auto foo2 = Foo(serialized_foo);
 }
+
+unittest
+{
+	import std.algorithm;
+	mixin ProtocolBufferFromString!`
+	message FooA {
+		repeated uint32 arr = 1 [packed=true];
+	}
+	message FooB {
+		repeated uint32 arr = 1;
+	}
+`;
+
+	FooA foo;
+	foo.arr = [1,3,5,7,2,4,6,8];
+
+	auto serialized_foo = foo.serialize();
+	auto foo2 = FooB(serialized_foo);
+	assert(equal(foo.arr, foo2.arr));
+	auto foo3 = FooA(foo2.serialize());
+	assert(equal(foo2.arr, foo3.arr));
+}
