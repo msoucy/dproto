@@ -78,7 +78,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				case "package": {
 					static if(is(Context==ProtoPackage)) {
 						enforce(context.packageName == null, unexpected("too many package names"));
-						context.packageName = readName();
+						context.packageName = readSymbolName();
 						enforce(readChar() == ';', unexpected("expected ';'"));
 						return;
 					} else {
@@ -140,7 +140,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				case "optional":
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
-						string type = readName();
+						string type = readSymbolName();
 						context.fields ~= readField(label, type);
 						return;
 					} else {
@@ -177,7 +177,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads a message declaration. */
 		MessageType readMessage() {
-			auto ret = MessageType(readName());
+			auto ret = MessageType(readSymbolName());
 			enforce(readChar() == '{', unexpected("expected '{'"));
 			while (true) {
 				readDocumentation();
@@ -208,7 +208,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads a service declaration and returns it. */
 		Service readService() {
-			string name = readName();
+			string name = readSymbolName();
 			auto ret = Service(name);
 
 			Service.Method[] methods = [];
@@ -228,16 +228,16 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads an rpc method and returns it. */
 		Service.Method readRpc() {
 			string documentation = "";
-			string name = readName();
+			string name = readSymbolName();
 
 			enforce(readChar() == '(', unexpected("expected '('"));
-			string requestType = readName();
+			string requestType = readSymbolName();
 			enforce(readChar() == ')', unexpected("expected ')'"));
 
 			enforce(readWord() == "returns", unexpected("expected 'returns'"));
 
 			enforce(readChar() == '(', unexpected("expected '('"));
-			string responseType = readName();
+			string responseType = readSymbolName();
 			// @todo check for option prefixes, responseType is the last in the white spaced list
 			enforce(readChar() == ')', unexpected("expected ')'"));
 
@@ -263,7 +263,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads an enumerated type declaration and returns it. */
 		EnumType readEnumType() {
-			auto ret = EnumType(readName());
+			auto ret = EnumType(readSymbolName());
 			enforce(readChar() == '{', unexpected("expected '{'"));
 			while (true) {
 				readDocumentation();
@@ -279,7 +279,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads a field declaration and returns it. */
 		Field readField(string label, string type) {
 			Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
-			string name = readName();
+			string name = readSymbolName();
 			enforce(readChar() == '=', unexpected("expected '='"));
 			int tag = readInt();
 			enforce((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29), new DProtoException("Invalid tag number: "~tag.to!string()));
@@ -422,6 +422,13 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			return optionName;
 		}
 
+		/** Reads a symbol name */
+		string readSymbolName() {
+			string name = readWord();
+			enforce(!isDKeyword(name), new DProtoReservedWordException(name));
+			return name;
+		}
+
 		/** Reads a non-empty word and returns it. */
 		string readWord(string pattern = `a-zA-Z0-9_.\-`) {
 			skipWhitespace(true);
@@ -549,6 +556,40 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		Exception unexpected(string message) {
 			throw new DProtoException("Syntax error in %s at %d:%d: %s"
 					.format(fileName, line+1, (pos - lineStart + 1), message));
+		}
+
+		/** Returns true if the name is a reserved word in D
+		 *
+		 * This will cause problems trying to use them as variables
+		 */
+		bool isDKeyword(string name)
+		{
+			// dfmt off
+			enum KEYWORDS = [
+				"abstract", "alias", "align", "asm", "assert", "auto",
+				"body", "bool", "break", "byte",
+				"case", "cast", "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal",
+				"dchar", "debug", "default", "delegate", "delete", "deprecated", "do", "double",
+				"else", "enum", "export", "extern",
+				"false", "final", "finally", "float", "for", "foreach", "foreach_reverse", "function",
+				"goto",
+				"idouble", "if", "ifloat", "immutable", "import", "in", "inout", "int", "interface", "invariant", "ireal", "is",
+				"lazy", "long",
+				"macro", "mixin", "module",
+				"new", "nothrow", "null",
+				"out", "override",
+				"package", "pragma", "private", "protected", "public", "pure",
+				"real", "ref", "return",
+				"scope", "shared", "short", "static", "struct", "super", "switch", "synchronized",
+				"template", "this", "throw", "true", "try", "typedef", "typeid", "typeof",
+				"ubyte", "ucent", "uint", "ulong", "union", "unittest", "ushort",
+				"version", "void", "volatile",
+				"wchar", "while", "with",
+				"__FILE__", "__MODULE__", "__LINE__", "__FUNCTION__", "__PRETTY_FUNCTION__",
+				"__gshared", "__traits", "__vector", "__parameters",
+			];
+			// dfmt on
+			return KEYWORDS.canFind(name);
 		}
 
 	}
