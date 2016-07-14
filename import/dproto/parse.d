@@ -77,26 +77,26 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			switch(label) {
 				case "package": {
 					static if(is(Context==ProtoPackage)) {
-						enforce(context.packageName == null, unexpected("too many package names"));
+						unexpected(context.packageName == null, "too many package names");
 						context.packageName = readSymbolName();
-						enforce(readChar() == ';', unexpected("expected ';'"));
+						unexpected(readChar() == ';', "Expected ';'");
 						return;
 					} else {
-						throw unexpected("package in " ~ ContextName);
+						throw new DProtoSyntaxException("package in " ~ ContextName);
 					}
 				}
 				case "import": {
 					static if(is(Context==ProtoPackage)) {
 						context.dependencies ~= readQuotedPath ();
-						enforce(readChar() == ';', unexpected("expected ';'"));
+						unexpected(readChar() == ';', "Expected ';'");
 						return;
 					} else {
-						throw unexpected("import in " ~ ContextName);
+						throw new DProtoSyntaxException("import in " ~ ContextName);
 					}
 				}
 				case "option": {
 					Option result = readOption('=');
-					enforce(readChar() == ';', unexpected("expected ';'"));
+					unexpected(readChar() == ';', "Expected ';'");
 					context.options[result.name] = result.value;
 					return;
 				}
@@ -105,7 +105,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.messageTypes ~= readMessage();
 						return;
 					} else {
-						throw unexpected("message in " ~ ContextName);
+						throw new DProtoSyntaxException("message in " ~ ContextName);
 					}
 				}
 				case "enum": {
@@ -113,7 +113,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.enumTypes ~= readEnumType();
 						return;
 					} else {
-						throw unexpected("enum in " ~ ContextName);
+						throw new DProtoSyntaxException("enum in " ~ ContextName);
 					}
 				}
 				case "extend": {
@@ -125,7 +125,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.rpcServices ~= readService();
 						return;
 					} else {
-						throw unexpected("service in " ~ ContextName);
+						throw new DProtoSyntaxException("service in " ~ ContextName);
 					}
 				}
 				case "rpc": {
@@ -133,7 +133,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.rpc ~= readRpc();
 						return;
 					} else {
-						throw unexpected("rpc in " ~ ContextName);
+						throw new DProtoSyntaxException("rpc in " ~ ContextName);
 					}
 				}
 				case "required":
@@ -144,7 +144,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						context.fields ~= readField(label, type);
 						return;
 					} else {
-						throw unexpected("fields must be nested");
+						throw new DProtoSyntaxException("Fields must be nested");
 					}
 				}
 				case "extensions": {
@@ -152,14 +152,14 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						readExtensions();
 						return;
 					} else {
-						throw unexpected("extensions must be nested");
+						throw new DProtoSyntaxException("Extensions must be nested");
 					}
 				}
 				default: {
 					static if(is(Context==EnumType)) {
-						enforce(readChar() == '=', unexpected("expected '='"));
+						unexpected(readChar() == '=', "Expected '='");
 						int tag = readInt();
-						enforce(readChar() == ';', unexpected("expected ';'"));
+						unexpected(readChar() == ';', "Expected ';'");
 						context.values[label] = tag;
 						return;
 					} else {
@@ -169,7 +169,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 								return;
 							}
 						}
-						throw unexpected("unexpected label: " ~ label);
+						throw new DProtoSyntaxException("unexpected label: " ~ label);
 					}
 				}
 			}
@@ -178,7 +178,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads a message declaration. */
 		MessageType readMessage() {
 			auto ret = MessageType(readSymbolName());
-			enforce(readChar() == '{', unexpected("expected '{'"));
+			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
 				if (peekChar() == '}') {
@@ -194,7 +194,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			@todo */
 		void readExtend() {
 			readName(); // Ignore this for now
-			enforce(readChar() == '{', unexpected("expected '{'"));
+			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
 				if (peekChar() == '}') {
@@ -212,7 +212,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			auto ret = Service(name);
 
 			Service.Method[] methods = [];
-			enforce(readChar() == '{', unexpected("expected '{'"));
+			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
 				if (peekChar() == '}') {
@@ -230,16 +230,16 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			string documentation = "";
 			string name = readSymbolName();
 
-			enforce(readChar() == '(', unexpected("expected '('"));
+			unexpected(readChar() == '(', "Expected '('");
 			string requestType = readSymbolName();
-			enforce(readChar() == ')', unexpected("expected ')'"));
+			unexpected(readChar() == ')', "Expected ')'");
 
-			enforce(readWord() == "returns", unexpected("expected 'returns'"));
+			unexpected(readWord() == "returns", "Expected 'returns'");
 
-			enforce(readChar() == '(', unexpected("expected '('"));
+			unexpected(readChar() == '(', "Expected '('");
 			string responseType = readSymbolName();
 			// @todo check for option prefixes, responseType is the last in the white spaced list
-			enforce(readChar() == ')', unexpected("expected ')'"));
+			unexpected(readChar() == ')', "Expected ')'");
 
 			auto ret = Service.Method(name, documentation, requestType, responseType);
 
@@ -256,7 +256,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 			}
 			else if (readChar() != ';') {
-				throw unexpected("expected ';'");
+				throw new DProtoSyntaxException("Expected ';'");
 			}
 			return ret;
 		}
@@ -264,7 +264,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads an enumerated type declaration and returns it. */
 		EnumType readEnumType() {
 			auto ret = EnumType(readSymbolName());
-			enforce(readChar() == '{', unexpected("expected '{'"));
+			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
 				if (peekChar() == '}') {
@@ -280,9 +280,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		Field readField(string label, string type) {
 			Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
 			string name = readSymbolName();
-			enforce(readChar() == '=', unexpected("expected '='"));
+			unexpected(readChar() == '=', "Expected '='");
 			int tag = readInt();
-			enforce((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29), new DProtoException("Invalid tag number: "~tag.to!string()));
+			enforce!DProtoSyntaxException((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29), "Invalid tag number: "~tag.to!string());
 			char c = peekChar();
 			Options options;
 			if (c == '[') {
@@ -293,7 +293,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				pos++;
 				return Field(labelEnum, type, name, tag, options);
 			}
-			throw unexpected("expected ';'");
+			throw new DProtoSyntaxException("Expected ';'");
 		}
 
 		/** Reads extensions like "extensions 101;" or "extensions 101 to max;".
@@ -315,14 +315,14 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				ret.minVal = minVal;
 				ret.maxVal = minVal;
 			}
-			enforce(readChar() == ';', unexpected("expected ';'"));
+			unexpected(readChar() == ';', "Expected ';'");
 			return ret;
 		}
 
 		/** Reads a option containing a name, an '=' or ':', and a value. */
 		Option readOption(char keyValueSeparator) {
 			string name = readName(); // Option name.
-			enforce(readChar() == keyValueSeparator, unexpected("expected '" ~ keyValueSeparator ~ "' in option"));
+			unexpected(readChar() == keyValueSeparator, "Expected '" ~ keyValueSeparator ~ "' in option");
 			string value = (peekChar() == '{') ? readMap('{', '}', ':').to!string() : readString();
 			return Option(name, value);
 		}
@@ -333,7 +333,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		 * ',' separating entries.
 		 */
 		Options readMap(char openBrace, char closeBrace, char keyValueSeparator) {
-			enforce(readChar() == openBrace, unexpected(openBrace ~ " to begin map"));
+			unexpected(readChar() == openBrace, openBrace ~ " to begin map");
 			Options result;
 			while (peekChar() != closeBrace) {
 
@@ -344,7 +344,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				if (c == ',') {
 					pos++;
 				} else if (c != closeBrace) {
-					throw unexpected("expected ',' or '" ~ closeBrace ~ "'");
+					throw new DProtoSyntaxException("Expected ',' or '" ~ closeBrace ~ "'");
 				}
 			}
 
@@ -368,7 +368,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		 */
 		char peekChar() {
 			skipWhitespace(true);
-			enforce(pos != data.length, unexpected("unexpected end of file"));
+			unexpected(pos != data.length, "unexpected end of file");
 			return data[pos];
 		}
 
@@ -379,28 +379,28 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		string readQuotedString() {
-			enforce(readChar() == '"', new DProtoException(""));
+			enforce!DProtoSyntaxException(readChar() == '"', "");
 			string result;
 			while (pos < data.length) {
 				char c = data[pos++];
 				if (c == '"') return '"'~result~'"';
 
 				if (c == '\\') {
-					enforce(pos != data.length, unexpected("unexpected end of file"));
+					unexpected(pos != data.length, "unexpected end of file");
 					c = data[pos++];
 				}
 
 				result ~= c;
 				if (c == '\n') newline();
 			}
-			throw unexpected("unterminated string");
+			throw new DProtoSyntaxException("unterminated string");
 		}
 
 		string readQuotedPath() {
 			skipWhitespace(true);
-			enforce(readChar() == '"', unexpected("imports should be quoted"));
+			unexpected(readChar() == '"', "imports should be quoted");
 			auto ret = readWord(`a-zA-Z0-9_.\-/`);
-			enforce(readChar() == '"', unexpected("imports should be quoted"));
+			unexpected(readChar() == '"', "imports should be quoted");
 			return ret;
 		}
 
@@ -411,11 +411,11 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			if (c == '(') {
 				pos++;
 				optionName = readWord();
-				enforce(readChar() == ')', unexpected("expected ')'"));
+				unexpected(readChar() == ')', "Expected ')'");
 			} else if (c == '[') {
 				pos++;
 				optionName = readWord();
-				enforce(readChar() == ']', unexpected("expected ']'"));
+				unexpected(readChar() == ']', "Expected ']'");
 			} else {
 				optionName = readWord();
 			}
@@ -425,7 +425,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads a symbol name */
 		string readSymbolName() {
 			string name = readWord();
-			enforce(!isDKeyword(name), new DProtoReservedWordException(name));
+			enforce!DProtoReservedWordException(!isDKeyword(name), name);
 			return name;
 		}
 
@@ -441,7 +441,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 					break;
 				}
 			}
-			enforce(start != pos, unexpected("expected a word"));
+			unexpected(start != pos, "Expected a word");
 			return data[start .. pos].idup;
 		}
 
@@ -456,7 +456,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				return tag.to!int(radix);
 			} catch (Exception e) {
-				throw unexpected("expected an integer but was " ~ tag);
+				throw new DProtoSyntaxException(
+						"Expected an integer but was `" ~ tag ~ "`",
+						e.msg);
 			}
 		}
 
@@ -479,7 +481,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads a comment and returns its body. */
 		string readComment() {
-			enforce(!(pos == data.length || data[pos] != '/'), new DProtoException(""));
+			enforce!DProtoSyntaxException(!(pos == data.length || data[pos] != '/'), "");
 			pos++;
 			int commentType = pos < data.length ? data[pos++] : -1;
 			if (commentType == '*') {
@@ -493,7 +495,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						if (c == '\n') newline();
 					}
 				}
-				throw unexpected("unterminated comment");
+				throw new DProtoSyntaxException("unterminated comment");
 			} else if (commentType == '/') {
 				int start = pos;
 				while (pos < data.length) {
@@ -505,7 +507,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				return data[start .. pos - 1].idup;
 			} else {
-				throw unexpected("unexpected '/'");
+				throw new DProtoSyntaxException("unexpected '/'");
 			}
 		}
 
@@ -553,25 +555,32 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			lineStart = pos;
 		}
 
-		Exception unexpected(string message) {
-			return new DProtoException("Syntax error in %s at %d:%d: %s"
-					.format(fileName, line+1, (pos - lineStart + 1), message));
+		void unexpected(bool value, string message)
+		{
+			if (!value)
+			{
+				new DProtoSyntaxException(
+					"Syntax error in %s at %d:%d: %s".format(fileName, line + 1,
+					(pos - lineStart + 1), message));
+			}
 		}
 
 		/** Returns true if the name is a reserved word in D
 		 *
 		 * This will cause problems trying to use them as variables
+		 * Note: Some keywords are specifically whitelisted,
+		 * in order to allow usage of the protobuf names
 		 */
 		bool isDKeyword(string name)
 		{
 			// dfmt off
 			enum KEYWORDS = [
 				"abstract", "alias", "align", "asm", "assert", "auto",
-				"body", "bool", "break", "byte",
+				"body", /+ "bool", +/ "break", "byte",
 				"case", "cast", "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal",
-				"dchar", "debug", "default", "delegate", "delete", "deprecated", "do", "double",
+				"dchar", "debug", "default", "delegate", "delete", "deprecated", "do", /+ "double", +/
 				"else", "enum", "export", "extern",
-				"false", "final", "finally", "float", "for", "foreach", "foreach_reverse", "function",
+				"false", "final", "finally", /+ "float", +/ "for", "foreach", "foreach_reverse", "function",
 				"goto",
 				"idouble", "if", "ifloat", "immutable", "import", "in", "inout", "int", "interface", "invariant", "ireal", "is",
 				"lazy", "long",
@@ -597,3 +606,4 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 	return ProtoSchemaParser(name_, data_).readProtoPackage();
 
 }
+

@@ -11,10 +11,9 @@ module dproto.unittests;
 
 import dproto.dproto;
 
-
 unittest
 {
-	assert(__traits(compiles,ProtocolBufferFromString!"message Test
+	assert(__traits(compiles, ProtocolBufferFromString!"message Test
 		{
 			optional string verySimple = 1;
 		}"));
@@ -195,8 +194,8 @@ unittest
 	import std.string;
 	import std.format;
 	import dproto.parse;
-	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>",serviceDefinition));
 
+	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", serviceDefinition));
 
 	assert(__traits(compiles, ProtocolBufferFromString!serviceDefinition));
 	assert(__traits(compiles, ProtocolBufferInterface!serviceDefinition));
@@ -207,13 +206,16 @@ unittest
 	// Example from README.md.
 	mixin ProtocolBufferInterface!serviceDefinition;
 
-	class ServiceImplementation : TestService {
-		ServiceResponse TestMethod(ServiceRequest input) {
+	class ServiceImplementation : TestService
+	{
+		ServiceResponse TestMethod(ServiceRequest input)
+		{
 			ServiceResponse output;
 			output.response = "received: " ~ input.request;
 			return output;
 		}
 	}
+
 	auto serviceTest = new ServiceImplementation;
 	ServiceRequest input;
 	input.request = "message";
@@ -248,7 +250,8 @@ unittest
 	assert(t.name == "");
 	assert(t.id == 0);
 	assert(t.phone.length == 0);
-	version(Have_painlessjson) {
+	version (Have_painlessjson)
+	{
 		assert(t.toJson() == `{"email":"","id":0,"name":"","phone":[]}`);
 	}
 
@@ -277,8 +280,10 @@ unittest
 	assert(t.phone[0] == pn1);
 	assert(t.phone.length == 1);
 
-	version(Have_painlessjson) {
-		assert(t.toJson() == `{"email":"Max.Musterman@example.com","id":3,"name":"Max Musterman","phone":[{"number":"0123456789","type":2}]}`);
+	version (Have_painlessjson)
+	{
+		assert(
+			t.toJson() == `{"email":"Max.Musterman@example.com","id":3,"name":"Max Musterman","phone":[{"number":"0123456789","type":2}]}`);
 	}
 
 	pn1.type = pn1.type.init;
@@ -404,7 +409,7 @@ unittest
 
 	AddressBook addressbook2 = AddressBook.fromProto(serializedObject);
 	assert(addressbook2.person.length == 2);
-	foreach (t2; addressbook2.person[0..1])
+	foreach (t2; addressbook2.person[0 .. 1])
 	{
 		assert(t2.name == "Max Musterman");
 		assert(t2.id == 3);
@@ -418,7 +423,7 @@ unittest
 		assert(t2.phone.length == 2);
 	}
 	//the gdc-4.8 evaluates false here. Maybe an compiler bug.
-	version(DigitalMars)
+	version (DigitalMars)
 	{
 		assert(addressbook2.person[0] == addressbook.person[1]);
 	}
@@ -502,8 +507,13 @@ unittest
 	{
 	@nogc:
 	@safe:
-		void put(in ubyte) {}
-		void put(in ubyte[]) {}
+		void put(in ubyte)
+		{
+		}
+
+		void put(in ubyte[])
+		{
+		}
 	}
 
 	@nogc void testNoGC()
@@ -511,6 +521,7 @@ unittest
 		OutBuf buf;
 		addressbook.serializeTo(buf);
 	}
+
 	testNoGC();
 }
 
@@ -522,9 +533,12 @@ unittest
 	}
 	";
 
-	static auto rvalue(in ubyte[] val) { return val; }
+	static auto rvalue(in ubyte[] val)
+	{
+		return val;
+	}
 
-	enum data = cast(ubyte[])[1 << 3 | 2, "abc".length] ~ cast(ubyte[])"abc";
+	enum data = cast(ubyte[])[1 << 3 | 2, "abc".length] ~ cast(ubyte[]) "abc";
 	const(ubyte)[] val = data;
 	assert(val.length == 5);
 	assert(Person(rvalue(val)).name == "abc");
@@ -560,13 +574,14 @@ unittest
 	import dproto.serialize;
 	import dproto.parse;
 	import std.string : strip;
+
 	auto proto_src = `import "foo/baz.proto";`;
 	auto proto_struct = ParseProtoSchema("<none>", proto_src);
 	auto d_src = proto_struct.toD;
 	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
-		   "Mixin string should not have two double quotes " ~ d_src);
+		"Mixin string should not have two double quotes " ~ d_src);
 	assert(proto_src == proto_struct.toProto.strip,
-		   "Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
+		"Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
 }
 
 unittest
@@ -634,7 +649,8 @@ unittest
 		}";
 }
 
-unittest {
+unittest
+{
 	mixin ProtocolBufferFromString!`
 		message TestStructure
 		{
@@ -644,6 +660,7 @@ unittest {
 		}
 	`;
 	import dproto.attributes : TagId;
+
 	assert(TagId!(TestStructure.optional_string) == 1);
 	assert(TagId!(TestStructure.required_string) == 2);
 	assert(TagId!(TestStructure.repeated_string) == 3);
@@ -651,7 +668,7 @@ unittest {
 
 unittest
 {
-    mixin ProtocolBufferFromString!"
+	mixin ProtocolBufferFromString!"
         message Stats {
             optional int32 agility = 1;
             optional int32 stamina = 2;
@@ -665,18 +682,20 @@ unittest
             optional Character main = 2;
         }
     ";
-    const int agility = 200;
-    auto acct = Account();
-    auto main = Character();
-    main.name = "Hogan";
-    main.stats = Stats();
-    main.stats.agility = agility;
-    acct.main = main;
-    auto ser = acct.serialize();
-    Account acct_rx;
-    acct_rx.deserialize(ser);
-    import std.string : format;
-    assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d", agility, acct_rx.main.stats.agility));
+	const int agility = 200;
+	auto acct = Account();
+	auto main = Character();
+	main.name = "Hogan";
+	main.stats = Stats();
+	main.stats.agility = agility;
+	acct.main = main;
+	auto ser = acct.serialize();
+	Account acct_rx;
+	acct_rx.deserialize(ser);
+	import std.string : format;
+
+	assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d",
+		agility, acct_rx.main.stats.agility));
 
 }
 
@@ -706,6 +725,7 @@ unittest
 	import std.string;
 	import std.format;
 	import dproto.parse;
+
 	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", pbstring));
 
 	mixin ProtocolBufferFromString!pbstring;
@@ -727,13 +747,13 @@ unittest
 	import dproto.parse;
 	import dproto.exception;
 	import std.exception;
+
 	enum pbstring = q{
 message Info {
    optional int32 version = 1 [default = -1];
 }
 	};
-	assertThrown!DProtoReservedWordException(
-			ParseProtoSchema("<none>", pbstring));
+	assertThrown!DProtoReservedWordException(ParseProtoSchema("<none>", pbstring));
 }
 
 unittest
@@ -763,13 +783,13 @@ message HeaderBBox {
 
 unittest
 {
-	assert(!__traits(compiles,
-	mixin(`mixin ProtocolBufferFromString!q{
+	assert(!__traits(compiles, mixin(`mixin ProtocolBufferFromString!q{
     message One {
         required string a;
         required int32 b;
     }
-};`)), "Malformed proto structure accepted");
+};`)),
+		"Malformed proto structure accepted");
 }
 
 unittest
@@ -790,7 +810,17 @@ unittest
 
 unittest
 {
+	mixin ProtocolBufferFromString!q{
+    message ReservedWordTest {
+        required bool notReservedWord = 1;
+    }
+};
+}
+
+unittest
+{
 	import std.algorithm;
+
 	mixin ProtocolBufferFromString!`
 	message FooA {
 		repeated uint32 arr = 1 [packed=true];
@@ -801,11 +831,25 @@ unittest
 `;
 
 	FooA foo;
-	foo.arr = [1,3,5,7,2,4,6,8];
+	foo.arr = [1, 3, 5, 7, 2, 4, 6, 8];
 
 	auto serialized_foo = foo.serialize();
 	auto foo2 = FooB(serialized_foo);
 	assert(equal(foo.arr, foo2.arr));
 	auto foo3 = FooA(foo2.serialize());
 	assert(equal(foo2.arr, foo3.arr));
+}
+
+unittest
+{
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+    message ReservedWordTest {
+        required bool notReservedWord;
+    }
+};
+	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
 }
