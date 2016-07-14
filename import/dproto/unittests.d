@@ -811,6 +811,8 @@ unittest
 unittest
 {
 	// Issue 86
+	import dproto.parse;
+	import dproto.exception;
 	enum pbstring = q{
     message ReservedWordTest {
         required bool notReservedWord = 1;
