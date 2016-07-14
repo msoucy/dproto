@@ -810,11 +810,14 @@ unittest
 
 unittest
 {
-	mixin ProtocolBufferFromString!q{
+	// Issue 86
+	enum pbstring = q{
     message ReservedWordTest {
         required bool notReservedWord = 1;
     }
 };
+	mixin ProtocolBufferFromString!pbstring;
+	assert(ParseProtoSchema("<none>", pbstring).toD());
 }
 
 unittest
@@ -842,6 +845,7 @@ unittest
 
 unittest
 {
+	// Issue 86
 	import dproto.parse;
 	import dproto.exception;
 	import std.exception;
