@@ -9,6 +9,7 @@ module dproto.parse;
 
 import dproto.exception;
 import dproto.intermediate;
+static import dproto.serialize;
 
 import std.algorithm;
 import std.array;
@@ -282,7 +283,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			string name = readSymbolName();
 			unexpected(readChar() == '=', "Expected '='");
 			int tag = readInt();
-			enforce!DProtoSyntaxException((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29), "Invalid tag number: "~tag.to!string());
+			enforce((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29),
+					new DProtoSyntaxException(
+						"Invalid tag number: "~tag.to!string()));
 			char c = peekChar();
 			Options options;
 			if (c == '[') {
@@ -379,7 +382,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		string readQuotedString() {
-			enforce!DProtoSyntaxException(readChar() == '"', "");
+			enforce(readChar() == '"', new DProtoSyntaxException(""));
 			string result;
 			while (pos < data.length) {
 				char c = data[pos++];
@@ -425,7 +428,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		/** Reads a symbol name */
 		string readSymbolName() {
 			string name = readWord();
-			enforce!DProtoReservedWordException(!isDKeyword(name), name);
+			enforce(!isDKeyword(name), new DProtoReservedWordException(name));
 			return name;
 		}
 
@@ -481,7 +484,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads a comment and returns its body. */
 		string readComment() {
-			enforce!DProtoSyntaxException(!(pos == data.length || data[pos] != '/'), "");
+			enforce(!(pos == data.length || data[pos] != '/'), new DProtoSyntaxException(""));
 			pos++;
 			int commentType = pos < data.length ? data[pos++] : -1;
 			if (commentType == '*') {
