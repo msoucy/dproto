@@ -85,8 +85,7 @@ template ProtoAccessors()
 				alias __field = Identity!(__traits(getMember, this, __member));
 				alias __fieldData = getAnnotation!(__field, ProtoField);
 				if(__msgdata.msgNum == __fieldData.fieldNumber) {
-					enum wt = __fieldData.wireType;
-					__field.putProtoVal!wt(__r);
+					__r.putProtoVal!(__field)(__msgdata);
 					__matched = true;
 				}
 			}
@@ -162,15 +161,32 @@ void serializeField(alias field, R)(ref R r) const
 	serializer!fieldData(rawField, r);
 }
 
-void putProtoVal(string wireType, T, R)(ref T t, auto ref R r)
-	if(isProtoInputRange!R)
+void putProtoVal(alias __field, R)(auto ref R r, ulong __msgdata)
+	if (isProtoInputRange!R)
 {
-	static if(is(T : U[], U) && !(is(T : string) || is(T : const(ubyte)[]))) {
-		U u;
-		u.putSingleProtoVal!wireType(r);
-		t ~= u;
-	} else {
-		t.putSingleProtoVal!wireType(r);
+	import std.range : ElementType;
+	import std.traits : isSomeString, isDynamicArray;
+
+	alias T = typeof(__field);
+	enum wireType = getAnnotation!(__field, ProtoField).wireType;
+	enum isBinString(T) = Identity!(is(T : const(ubyte)[]));
+	static if (isDynamicArray!T && !(isSomeString!T || isBinString!T))
+	{
+		ElementType!T u;
+		ulong nelems = 1;
+		if (wireType.msgType != PACKED_MSG_TYPE && __msgdata.wireType == PACKED_MSG_TYPE)
+		{
+			nelems = r.readVarint();
+		}
+		for (auto n = 0; n < nelems; n++)
+		{
+			u.putSingleProtoVal!wireType(r);
+			__field ~= u;
+		}
+	}
+	else
+	{
+		__field.putSingleProtoVal!wireType(r);
 	}
 }
 
