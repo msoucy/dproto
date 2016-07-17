@@ -9,7 +9,7 @@ module dproto.parse;
 
 import dproto.exception;
 import dproto.intermediate;
-static import dproto.serialize;
+import dproto.serialize : isBuiltinType;
 
 import std.algorithm;
 import std.array;
@@ -165,7 +165,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						return;
 					} else {
 						static if( hasMember!(Context, "fields") ) {
-							if(dproto.serialize.isBuiltinType(label)) {
+							if(isBuiltinType(label)) {
 								context.fields ~= readField("optional", label);
 								return;
 							}
