@@ -59,6 +59,7 @@ struct MessageType {
 
 		// Methods for serialization and deserialization.
 		if(fmt.spec != 'p') {
+			sink(`static import dproto.attributes;`);
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
 		}
 		sink("}\n");

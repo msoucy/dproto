@@ -76,7 +76,7 @@ template ProtoAccessors()
 	void deserialize(R)(auto ref R __r)
 		if(isProtoInputRange!R)
 	{
-		import dproto.attributes;
+		import dproto.attributes : getAnnotation;
 		import std.traits;
 		while(!__r.empty()) {
 			auto __msgdata = __r.readVarint();
@@ -211,6 +211,7 @@ void putSingleProtoVal(string wireType, T, R)(ref T t, auto ref R r)
 void serializeProto(alias fieldData, T, R)(const T data, ref R r)
 	if(isProtoOutputRange!R)
 {
+	static import dproto.serialize;
 	static if(is(T : const string)) {
 		r.toVarint(fieldData.header);
 		r.writeProto!"string"(data);

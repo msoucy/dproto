@@ -6,6 +6,7 @@
  * Version: 0.0.2
  */
 module dproto.exception;
+import std.exception;
 
 /*******************************************************************************
  * Basic exception, something went wrong with creating a buffer struct
@@ -22,4 +23,10 @@ class DProtoReservedWordException : DProtoException {
 		keyword = word;
 	}
 	string keyword;
+}
+
+class DProtoSyntaxException : DProtoException {
+	this(string msg, string file=__FILE__, ulong line=__LINE__) {
+		super(msg, file, line);
+	}
 }
