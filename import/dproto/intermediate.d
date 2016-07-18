@@ -52,16 +52,14 @@ struct MessageType {
 			}
 		} else {
 			sink.formattedWrite("static struct %s {\n", name);
+
+			// Methods for serialization and deserialization.
+			sink("static import dproto.attributes;\n");
+			sink(`mixin dproto.attributes.ProtoAccessors;`);
 		}
 		foreach(et; enumTypes) et.toString(sink, fmt);
 		foreach(mt; messageTypes) mt.toString(sink, fmt);
 		foreach(field; fields) field.toString(sink, fmt);
-
-		// Methods for serialization and deserialization.
-		if(fmt.spec != 'p') {
-			sink(`static import dproto.attributes;`);
-			sink(`mixin dproto.attributes.ProtoAccessors;`);
-		}
 		sink("}\n");
 	}
 

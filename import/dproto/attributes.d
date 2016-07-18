@@ -76,8 +76,10 @@ template ProtoAccessors()
 	void deserialize(R)(auto ref R __r)
 		if(isProtoInputRange!R)
 	{
-		import dproto.attributes : getAnnotation;
 		import std.traits;
+		import dproto.attributes;
+		import painlesstraits : getAnnotation;
+
 		while(!__r.empty()) {
 			auto __msgdata = __r.readVarint();
 			bool __matched = false;
@@ -106,11 +108,12 @@ template ProtoAccessors()
 
 template ProtoFields(alias self)
 {
-	import std.typetuple : Filter, TypeTuple;
+	import std.typetuple : Filter, TypeTuple, Erase;
 
 	alias Field(alias F) = Identity!(__traits(getMember, self, F));
 	alias HasProtoField(alias F) = hasValueAnnotation!(Field!F, ProtoField);
-	alias ProtoFields = Filter!(HasProtoField, TypeTuple!(__traits(allMembers, typeof(self))));
+	alias AllMembers = TypeTuple!(__traits(allMembers, typeof(self)));
+	alias ProtoFields = Filter!(HasProtoField, Erase!("dproto", AllMembers));
 }
 
 template protoDefault(T) {
