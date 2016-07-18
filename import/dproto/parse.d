@@ -178,15 +178,25 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 					}
 				}
 				default: {
-					static if(is(Context==EnumType)) {
+					static if (is(Context == EnumType))
+					{
 						unexpected(readChar() == '=', "Expected '='");
 						int tag = readInt();
+						if (context.options.get("allow_alias", "true") == "false"
+								&& context.values.values.canFind(tag))
+						{
+							throw new DProtoSyntaxException("Enum values must not be duplicated");
+						}
 						unexpected(readChar() == ';', "Expected ';'");
 						context.values[label] = tag;
 						return;
-					} else {
-						static if( hasMember!(Context, "fields") ) {
-							if(isBuiltinType(label)) {
+					}
+					else
+					{
+						static if (hasMember!(Context, "fields"))
+						{
+							if (isBuiltinType(label))
+							{
 								context.fields ~= readField("optional", label);
 								return;
 							}

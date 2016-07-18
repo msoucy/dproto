@@ -959,3 +959,29 @@ unittest
 };
 	assert(ParseProtoSchema("<none>", pbstring).toD());
 }
+
+unittest
+{
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	enum Foo {
+		option allow_alias = false;
+		ONE = 1;
+		TWO = 1;
+		THREE = 3;
+	}
+};
+	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+
+	enum pbstring2 = q{
+	enum Foo {
+		ONE = 1;
+		TWO = 1;
+		THREE = 3;
+	}
+};
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring2));
+}
