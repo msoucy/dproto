@@ -933,3 +933,29 @@ unittest
     `;
 	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoSemicolon));
 }
+
+unittest
+{
+	// Issue #26
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	import public;
+};
+	mixin ProtocolBufferFromString!pbstring;
+}
+
+unittest
+{
+	// Issue #26
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	import public "proto/example.proto";
+};
+	assert(ParseProtoSchema("<none>", pbstring).toD());
+}

@@ -102,7 +102,14 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "import": {
 					static if(is(Context==ProtoPackage)) {
-						context.dependencies ~= readQuotedPath ();
+						bool isPublicImport = false;
+						if(peekChar() == 'p') {
+							unexpected(readWord() == "public", "Expected 'public'");
+							isPublicImport = true;
+						}
+						if(peekChar() == '"') {
+							context.dependencies ~= Dependency(readQuotedPath (), isPublicImport);
+						}
 						unexpected(readChar() == ';', "Expected ';'");
 						return;
 					} else {
