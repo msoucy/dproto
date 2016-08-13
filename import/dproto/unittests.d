@@ -985,3 +985,18 @@ unittest
 };
 	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring2));
 }
+
+unittest
+{
+	// Issue #92
+
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = `
+		syntax = "proto3";
+	`;
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+}
+

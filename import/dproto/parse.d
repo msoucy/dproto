@@ -201,7 +201,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 								return;
 							}
 						}
-						throw new DProtoSyntaxException("unexpected label: " ~ label);
+						throw new DProtoSyntaxException("unexpected label: `" ~ label ~ '`');
 					}
 				}
 			}
@@ -336,7 +336,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			Extension ret;
 			int minVal = readInt(); // Range start.
 			if (peekChar() != ';') {
-				readWord(); // Literal 'to'
+				unexpected(readWord() == "to", "Expected 'to'");
 				string maxVal = readWord(); // Range end.
 				if(maxVal != "max") {
 					if(maxVal[0..2] == "0x") {
@@ -413,10 +413,12 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		string readQuotedString() {
-			enforce(readChar() == '"', new DProtoSyntaxException(""));
+			skipWhitespace(true);
+			auto c = readChar();
+			enforce(c == '"', new DProtoSyntaxException("Expected \" but got " ~ c));
 			string result;
 			while (pos < data.length) {
-				char c = data[pos++];
+				c = data[pos++];
 				if (c == '"') return '"'~result~'"';
 
 				if (c == '\\') {

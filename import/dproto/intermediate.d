@@ -137,18 +137,21 @@ struct ProtoPackage {
 	}
 	string fileName;
 	string packageName;
-	string syntax;
 	Dependency[] dependencies;
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 	Options options;
 	Service[] rpcServices;
+	string syntax = "proto2";
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
 		if(fmt.spec == 'p') {
 			if(packageName) {
 				sink.formattedWrite("package %s; ", packageName);
+			}
+			if(syntax != "proto2") {
+				sink.formattedWrite(`syntax = %s; `, syntax);
 			}
 		}
 		foreach(dep; dependencies) {
