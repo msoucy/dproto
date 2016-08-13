@@ -794,6 +794,8 @@ unittest
 
 unittest
 {
+	import std.algorithm;
+
 	mixin ProtocolBufferFromString!`
 	message Foo {
 		repeated uint32 arr = 1 [packed=true];
@@ -806,11 +808,13 @@ unittest
 	auto serialized_foo = foo.serialize();
 
 	auto foo2 = Foo(serialized_foo);
+
+	assert(equal(foo.arr, foo2.arr));
 }
 
 unittest
 {
-	// Issue 86
+	// Issue #86
 	import dproto.parse;
 	import dproto.exception;
 	enum pbstring = q{
@@ -847,7 +851,7 @@ unittest
 
 unittest
 {
-	// Issue 86
+	// Issue #86
 	import dproto.parse;
 	import dproto.exception;
 	import std.exception;
@@ -858,4 +862,26 @@ unittest
     }
 };
 	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+}
+
+unittest
+{
+	// Issue #89
+	import dproto.dproto;
+
+	mixin ProtocolBufferFromString!q{
+		message Test {
+			repeated double id = 1 [packed = true];
+		}
+
+	};
+
+    Test t;
+
+    t.id = [123];
+
+    auto s = t.serialize();
+    t = Test(s);
+
+    assert(t.id == [123]);
 }

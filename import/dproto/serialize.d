@@ -12,7 +12,6 @@ import dproto.compat;
 
 import std.algorithm;
 import std.array;
-import std.bitmanip;
 import std.conv;
 import std.exception;
 import std.range;
@@ -238,7 +237,7 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T readVarint(R, T = ulong)(ref R src)
+T readVarint(R, T = ulong)(auto ref R src)
 	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
@@ -393,7 +392,7 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
  *  	src = The data stream
  * Returns: The decoded value
  */
-BuffType!T readProto(string T, R)(ref R src)
+BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "int32".msgType)
 {
 	static if(T == "sint32" || T == "sint64")
@@ -403,15 +402,16 @@ BuffType!T readProto(string T, R)(ref R src)
 }
 
 /// Ditto
-BuffType!T readProto(string T, R)(ref R src)
+BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R &&
 	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
+	import std.bitmanip : read, Endian;
 	return src.read!(BuffType!T, Endian.littleEndian)();
 }
 
 /// Ditto
-BuffType!T readProto(string T, R)(ref R src)
+BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "string".msgType)
 {
 	BuffType!T ret;
@@ -460,6 +460,7 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isProtoOutputRange!R &&
 	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
+	import std.bitmanip : nativeToLittleEndian;
 	r.put(src.nativeToLittleEndian!(BuffType!T)[]);
 }
 

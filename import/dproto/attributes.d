@@ -167,7 +167,8 @@ void serializeField(alias field, R)(ref R r) const
 void putProtoVal(alias __field, R)(auto ref R r, ulong __msgdata)
 	if (isProtoInputRange!R)
 {
-	import std.range : ElementType;
+	import std.range : ElementType, takeExactly, popFrontExactly;
+	import std.array : empty; // Needed if R is an array
 	import std.traits : isSomeString, isDynamicArray;
 
 	alias T = typeof(__field);
@@ -176,12 +177,18 @@ void putProtoVal(alias __field, R)(auto ref R r, ulong __msgdata)
 	static if (isDynamicArray!T && !(isSomeString!T || isBinString!T))
 	{
 		ElementType!T u;
-		ulong nelems = 1;
 		if (wireType.msgType != PACKED_MSG_TYPE && __msgdata.wireType == PACKED_MSG_TYPE)
 		{
-			nelems = r.readVarint();
+			ulong nelems = r.readVarint();
+			auto packeddata = takeExactly(r, nelems);
+			while(!packeddata.empty)
+			{
+				u.putSingleProtoVal!wireType(packeddata);
+				__field ~= u;
+			}
+			r.popFrontExactly(nelems);
 		}
-		for (auto n = 0; n < nelems; n++)
+		else
 		{
 			u.putSingleProtoVal!wireType(r);
 			__field ~= u;
