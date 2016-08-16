@@ -885,3 +885,51 @@ unittest
 
     assert(t.id == [123]);
 }
+
+unittest
+{
+    // Issue #92
+    import dproto.dproto : ProtocolBufferFromString;
+    import dproto.parse : ParseProtoSchema;
+
+    enum syntaxProto2 = `
+        syntax = "proto2";
+    `;
+	static assert(__traits(compiles, ProtocolBufferFromString!syntaxProto2));
+
+    enum schemaProto2 = ParseProtoSchema("<none>", syntaxProto2);
+    static assert(schemaProto2.syntax == `"proto2"`);
+
+    enum syntaxProto3 = `
+        syntax = "proto3";
+    `;
+	static assert(__traits(compiles, ProtocolBufferFromString!syntaxProto3));
+
+    enum schemaProto3 = ParseProtoSchema("<none>", syntaxProto3);
+    static assert(schemaProto3.syntax == `"proto3"`);
+
+    enum syntaxNoEquals = `
+        syntax "proto2";
+    `;
+	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoEquals));
+
+    enum syntaxNoQuotes = `
+        syntax = proto2;
+    `;
+	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoQuotes));
+
+    enum syntaxNoLQuote = `
+        syntax = proto2";
+    `;
+	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoLQuote));
+
+    enum syntaxNoRQuote = `
+        syntax = "proto2;
+    `;
+	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoRQuote));
+
+    enum syntaxNoSemicolon = `
+        syntax = "proto2"
+    `;
+	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoSemicolon));
+}
