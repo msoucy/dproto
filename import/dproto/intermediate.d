@@ -113,6 +113,7 @@ struct ProtoPackage {
 	}
 	string fileName;
 	string packageName;
+	string syntax;
 	string[] dependencies;
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;

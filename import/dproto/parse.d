@@ -76,6 +76,20 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 			string label = readWord();
 
 			switch(label) {
+				case "syntax": {
+					static if(is(Context==ProtoPackage)) {
+						unexpected(context.syntax == null, "too many syntax statements");
+						unexpected(readChar() == '=', "Expected '=' after 'syntax'");
+						unexpected(peekChar() == '"', `Expected opening quote '"' after 'syntax ='`);
+						context.syntax = readQuotedString();
+						unexpected(context.syntax == `"proto2"` || context.syntax == `"proto3"`,
+						           "Unexpected syntax version: `" ~ context.syntax ~ "`");
+						unexpected(readChar() == ';', "Expected ';' after syntax declaration");
+						return;
+					} else {
+						throw new DProtoSyntaxException("syntax in " ~ ContextName);
+					}
+				}
 				case "package": {
 					static if(is(Context==ProtoPackage)) {
 						unexpected(context.packageName == null, "too many package names");
