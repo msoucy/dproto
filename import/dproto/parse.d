@@ -27,7 +27,8 @@ import std.traits;
  * unrecognized options, and extensions are discarded. It doesn't retain nesting
  * within types.
  */
-ProtoPackage ParseProtoSchema(const string name_, string data_) {
+ProtoPackage ParseProtoSchema(const string name_, string data_)
+{
 
 	struct ProtoSchemaParser {
 
@@ -93,7 +94,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				case "package": {
 					static if(is(Context==ProtoPackage)) {
 						unexpected(context.packageName == null, "too many package names");
-						context.packageName = readSymbolName();
+						context.packageName = readSymbolName(context);
 						unexpected(readChar() == ';', "Expected ';'");
 						return;
 					} else {
@@ -124,7 +125,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "message": {
 					static if(hasMember!(Context, "messageTypes")) {
-						context.messageTypes ~= readMessage();
+						context.messageTypes ~= readMessage(context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("message in " ~ ContextName);
@@ -132,7 +133,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "enum": {
 					static if(hasMember!(Context, "enumTypes")) {
-						context.enumTypes ~= readEnumType();
+						context.enumTypes ~= readEnumType(context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("enum in " ~ ContextName);
@@ -144,7 +145,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "service": {
 					static if(hasMember!(Context, "rpcServices")) {
-						context.rpcServices ~= readService();
+						context.rpcServices ~= readService(context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("service in " ~ ContextName);
@@ -152,7 +153,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "rpc": {
 					static if( hasMember!(Context, "rpc")) {
-						context.rpc ~= readRpc();
+						context.rpc ~= readRpc(context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("rpc in " ~ ContextName);
@@ -162,8 +163,8 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				case "optional":
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
-						string type = readSymbolName();
-						context.fields ~= readField(label, type);
+						string type = readSymbolName(context);
+						context.fields ~= readField(label, type, context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("Fields must be nested");
@@ -171,7 +172,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 				}
 				case "extensions": {
 					static if(!is(Context==ProtoPackage)) {
-						readExtensions();
+						readExtensions(context);
 						return;
 					} else {
 						throw new DProtoSyntaxException("Extensions must be nested");
@@ -197,7 +198,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						{
 							if (isBuiltinType(label))
 							{
-								context.fields ~= readField("optional", label);
+								context.fields ~= readField("optional", label, context);
 								return;
 							}
 						}
@@ -208,8 +209,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads a message declaration. */
-		MessageType readMessage() {
-			auto ret = MessageType(readSymbolName());
+		MessageType readMessage(Context)(Context context) {
+			auto ret = MessageType(readSymbolName(context));
+			ret.options = context.options;
 			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
@@ -239,8 +241,8 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads a service declaration and returns it. */
-		Service readService() {
-			string name = readSymbolName();
+		Service readService(Context)(Context context) {
+			string name = readSymbolName(context);
 			auto ret = Service(name);
 
 			Service.Method[] methods = [];
@@ -258,18 +260,18 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 
 		/** Reads an rpc method and returns it. */
-		Service.Method readRpc() {
+		Service.Method readRpc(Context)(Context context) {
 			string documentation = "";
-			string name = readSymbolName();
+			string name = readSymbolName(context);
 
 			unexpected(readChar() == '(', "Expected '('");
-			string requestType = readSymbolName();
+			string requestType = readSymbolName(context);
 			unexpected(readChar() == ')', "Expected ')'");
 
 			unexpected(readWord() == "returns", "Expected 'returns'");
 
 			unexpected(readChar() == '(', "Expected '('");
-			string responseType = readSymbolName();
+			string responseType = readSymbolName(context);
 			// @todo check for option prefixes, responseType is the last in the white spaced list
 			unexpected(readChar() == ')', "Expected ')'");
 
@@ -294,8 +296,8 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads an enumerated type declaration and returns it. */
-		EnumType readEnumType() {
-			auto ret = EnumType(readSymbolName());
+		EnumType readEnumType(Context)(Context context) {
+			auto ret = EnumType(readSymbolName(context));
 			unexpected(readChar() == '{', "Expected '{'");
 			while (true) {
 				readDocumentation();
@@ -309,9 +311,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads a field declaration and returns it. */
-		Field readField(string label, string type) {
+		Field readField(Context)(string label, string type, Context context) {
 			Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
-			string name = readSymbolName();
+			string name = readSymbolName(context);
 			unexpected(readChar() == '=', "Expected '='");
 			int tag = readInt();
 			enforce((0 < tag && tag < 19000) || (19999 < tag && tag < 2^^29),
@@ -332,7 +334,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 
 		/** Reads extensions like "extensions 101;" or "extensions 101 to max;".
 			@todo */
-		Extension readExtensions() {
+		Extension readExtensions(Context)(Context context) {
 			Extension ret;
 			int minVal = readInt(); // Range start.
 			if (peekChar() != ';') {
@@ -459,9 +461,23 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 		}
 
 		/** Reads a symbol name */
-		string readSymbolName() {
+		string readSymbolName(Context)(Context context) {
 			string name = readWord();
-			enforce(!isDKeyword(name), new DProtoReservedWordException(name));
+			if(isDKeyword(name))
+			{
+				// Wrapped in quotes to properly evaluate string
+				string reservedFmtRaw = context.options.get("dproto_reserved_fmt", `"%s_"`);
+				string reservedFmt;
+				formattedRead(reservedFmtRaw, `"%s"`, &reservedFmt);
+				if(reservedFmt != "%s")
+				{
+					name = reservedFmt.format(name);
+				}
+				else
+				{
+					throw new DProtoReservedWordException(name);
+				}
+			}
 			return name;
 		}
 

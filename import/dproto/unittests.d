@@ -753,7 +753,14 @@ message Info {
    optional int32 version = 1 [default = -1];
 }
 	};
-	assertThrown!DProtoReservedWordException(ParseProtoSchema("<none>", pbstring));
+	assertThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>",
+				`option dproto_reserved_fmt = "%s"; ` ~ pbstring));
+	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>",
+				`option dproto_reserved_fmt = "%s_"; ` ~ pbstring));
+	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>", pbstring));
 }
 
 unittest
