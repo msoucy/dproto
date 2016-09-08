@@ -12,14 +12,25 @@ Protocol buffers are a language-agnostic way of specifying message structures to
 
 `dproto` is designed to enable mixing protocol buffer files into your D code at compile time.
 
-Inspiration and a good portion of the parser is adapted from [square/protoparser](http://github.com/square/protoparser)
+Inspiration and a good portion of the original parser is adapted from [square/protoparser](http://github.com/square/protoparser)
 
 ----
-# Example
+
+# Options
+
+`dproto` supports altering behavior via `protobuf` options:
+
+| Option                | Meaning                                                | Example                                      | Default |
+|-----------------------|--------------------------------------------------------|----------------------------------------------|---------|
+| `dproto_reserved_fmt` | The format for renaming reserved D keywords as fields. | `"%s_"` will convert `version` to `version_` | `"%s_"` |
+
+----
+
+# Examples
 
 [Further info](https://developers.google.com/protocol-buffers/docs/overview)
 
-Examples can be found in `import/dproto/dproto.d` and in examples.
+Examples can be found in `import/dproto/dproto.d` and in `examples/`.
 
 ## Simple Example
 
@@ -106,7 +117,7 @@ int main()
 	Person.PhoneNumber pn1;
 	pn1.number = "0123456789";
 	pn1.type = PhoneType.WORK;
-	
+
 	Person.PhoneNumber pn2;
 	pn2.number = "0123456789";
 
@@ -116,7 +127,7 @@ int main()
 	addressbook.person ~= t;
 
 	ubyte[] serializedObject = addressbook.serialize();
-	
+
 	AddressBook addressbook2 = AddressBook(serializedObject);
 	assert(addressbook2.person.length == 2);
 	foreach(t2; addressbook2.person)

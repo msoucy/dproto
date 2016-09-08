@@ -28,7 +28,7 @@ struct Options {
 			if(!raw.length) return;
 			sink.formattedWrite(" [%-(%s = %s%|, %)]", raw);
 		} else {
-			sink.formattedWrite(`["dprotoGenerated": "true"%(, %s : %s%)]`, raw);
+			sink.formattedWrite(`["dproto_generated": "true"%(, %s : %s%)]`, raw);
 		}
 	}
 }
@@ -107,18 +107,42 @@ struct Extension {
 	ulong maxVal = ulong.max;
 }
 
+struct Dependency {
+	this(string depname, bool isPublic = false) {
+		this.name = depname;
+		this.isPublic = isPublic;
+	}
+	string name;
+	bool isPublic;
+
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		if(fmt.spec == 'p') {
+			sink("import ");
+			if(isPublic) {
+				sink("public ");
+			}
+		   sink.formattedWrite(`"%s"; `, name);
+		} else {
+			sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, name);
+		}
+	}
+
+	string toD() @property const { return "%s".format(this); }
+}
+
 struct ProtoPackage {
 	this(string fileName) {
 		this.fileName = fileName.idup;
 	}
 	string fileName;
 	string packageName;
-	string syntax;
-	string[] dependencies;
+	Dependency[] dependencies;
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 	Options options;
 	Service[] rpcServices;
+	string syntax = "proto2";
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
@@ -126,13 +150,12 @@ struct ProtoPackage {
 			if(packageName) {
 				sink.formattedWrite("package %s; ", packageName);
 			}
-			foreach(dep; dependencies) {
-                               sink.formattedWrite(`import "%s"; `, dep);
+			if(syntax != "proto2") {
+				sink.formattedWrite(`syntax = %s; `, syntax);
 			}
-		} else {
-			foreach(dep;dependencies) {
-				sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, dep);
-			}
+		}
+		foreach(dep; dependencies) {
+			dep.toString(sink, fmt);
 		}
 		foreach(e; enumTypes) e.toString(sink, fmt);
 		foreach(m; messageTypes) m.toString(sink, fmt);

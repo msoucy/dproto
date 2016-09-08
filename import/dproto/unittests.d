@@ -753,7 +753,14 @@ message Info {
    optional int32 version = 1 [default = -1];
 }
 	};
-	assertThrown!DProtoReservedWordException(ParseProtoSchema("<none>", pbstring));
+	assertThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>",
+				`option dproto_reserved_fmt = "%s"; ` ~ pbstring));
+	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>",
+				`option dproto_reserved_fmt = "%s_"; ` ~ pbstring));
+	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
+				"<none>", pbstring));
 }
 
 unittest
@@ -933,3 +940,70 @@ unittest
     `;
 	static assert(!__traits(compiles, ProtocolBufferFromString!syntaxNoSemicolon));
 }
+
+unittest
+{
+	// Issue #26
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	import public;
+};
+	mixin ProtocolBufferFromString!pbstring;
+}
+
+unittest
+{
+	// Issue #26
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	import public "proto/example.proto";
+};
+	assert(ParseProtoSchema("<none>", pbstring).toD());
+}
+
+unittest
+{
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = q{
+	enum Foo {
+		option allow_alias = false;
+		ONE = 1;
+		TWO = 1;
+		THREE = 3;
+	}
+};
+	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+
+	enum pbstring2 = q{
+	enum Foo {
+		ONE = 1;
+		TWO = 1;
+		THREE = 3;
+	}
+};
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring2));
+}
+
+unittest
+{
+	// Issue #92
+
+	import dproto.parse;
+	import dproto.exception;
+	import std.exception;
+
+	enum pbstring = `
+		syntax = "proto3";
+	`;
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+}
+
