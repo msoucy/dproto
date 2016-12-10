@@ -21,3 +21,4 @@ Not Implemented
 * Extensions
 * Options
 * Mapping types
+* Reserved fields
