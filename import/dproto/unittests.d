@@ -1007,3 +1007,24 @@ unittest
 	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
 }
 
+unittest
+{
+	enum pbstring = `
+	message MyMsgAux {
+		optional string foo1=1;
+	}
+
+	message MyMsg {
+		required MyMsgAux a1=1;
+		optional MyMsgAux a2=2;
+	}
+	`;
+	mixin ProtocolBufferFromString!pbstring;
+
+	MyMsg proto;
+	proto.a1.foo1 = "bar"; // ok
+	proto.a2 = MyMsgAux();
+	proto.a2.foo1 = "bar"; // Called `get' on null Nullable!MymsgAux
+	assert(proto.a1.foo1 == proto.a2.foo1);
+}
+
