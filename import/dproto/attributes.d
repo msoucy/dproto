@@ -66,7 +66,7 @@ template ProtoAccessors()
 		if(isProtoOutputRange!R)
 	{
 		import dproto.attributes;
-		import std.traits;
+		import std.traits : Identity;
 		foreach(__member; ProtoFields!this) {
 			alias __field = Identity!(__traits(getMember, this, __member));
 			serializeField!__field(__r);
@@ -76,7 +76,7 @@ template ProtoAccessors()
 	void deserialize(R)(auto ref R __r)
 		if(isProtoInputRange!R)
 	{
-		import std.traits;
+		import std.traits : Identity;
 		import dproto.attributes;
 		import painlesstraits : getAnnotation;
 
