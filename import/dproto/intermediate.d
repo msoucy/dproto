@@ -32,15 +32,17 @@ struct ProtoPackage {
 	
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
-		if(fmt.spec == 'p' || fmt.spec == 'd') {
+		if(fmt.spec == 'p') {
 			if(packageName) {
 				sink.formattedWrite("package %s; \n\n", packageName);
 			}
 			if(syntax != "proto2") {
 				sink.formattedWrite(`syntax = %s; \n`, syntax);
 			}
-		}
-		if(fmt.spec == 'd'){
+		}else if(fmt.spec == 'd'){
+			if(packageName) {
+				sink.formattedWrite("module %s; \n\n", packageName);
+			}
 			sink("import std.range;\nimport dproto.serialize;\n");
 		}
 		foreach(dep; dependencies) {
