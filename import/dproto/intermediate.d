@@ -17,6 +17,52 @@ import std.conv;
 import std.string;
 import std.format;
 
+struct ProtoPackage {
+	this(string fileName) {
+		this.fileName = fileName.idup;
+	}
+	string fileName;
+	string packageName;
+	Dependency[] dependencies;
+	EnumType[] enumTypes;
+	MessageType[] messageTypes;
+	Options options;
+	Service[] rpcServices;
+	string syntax = "proto2";
+	
+	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	{
+		if(fmt.spec == 'p' || fmt.spec == 'd') {
+			if(packageName) {
+				sink.formattedWrite("package %s; \n\n", packageName);
+			}
+			if(syntax != "proto2") {
+				sink.formattedWrite(`syntax = %s; \n`, syntax);
+			}
+		}
+		if(fmt.spec == 'd'){
+			sink("import std.range;\nimport dproto.serialize;\n");
+		}
+		foreach(dep; dependencies) {
+			dep.toString(sink, fmt);
+			sink("\n");
+		}
+		sink("\n");
+		foreach(e; enumTypes){ e.toString(sink, fmt);sink("\n");}
+		foreach(m; messageTypes){ m.toString(sink, fmt); sink("\n");}
+		foreach(r; rpcServices){r.toString(sink, fmt);sink("\n");}
+		if(fmt.spec == 'p') {
+			foreach(opt, val; options) {
+				sink.formattedWrite("option %s = %s; \n", opt, val);
+			}
+		}
+	}
+	
+	string toProto() @property const { return "%p".format(this); }
+	string toD() @property const { return "%s".format(this); }
+}
+
+
 package:
 
 struct Options {
@@ -48,18 +94,19 @@ struct MessageType {
 		if(fmt.spec == 'p') {
 			sink.formattedWrite("message %s { ", name);
 			foreach(opt, val; options) {
-				sink.formattedWrite("option %s = %s; ", opt, val);
+				sink.formattedWrite("\toption %s = %s; ", opt, val);
 			}
 		} else {
 			sink.formattedWrite("static struct %s {\n", name);
 
 			// Methods for serialization and deserialization.
-			sink("static import dproto.attributes;\n");
+			sink("\tstatic import dproto.attributes;\n\t");
 			sink(`mixin dproto.attributes.ProtoAccessors;`);
+			sink("\n");
 		}
-		foreach(et; enumTypes) et.toString(sink, fmt);
-		foreach(mt; messageTypes) mt.toString(sink, fmt);
-		foreach(field; fields) field.toString(sink, fmt);
+		foreach(et; enumTypes){sink("\n");et.toString(sink, fmt);}
+		foreach(mt; messageTypes){sink("\n"); mt.toString(sink, fmt);}
+		foreach(field; fields){sink("\n"); field.toString(sink, fmt);}
 		sink("}\n");
 	}
 
@@ -80,12 +127,12 @@ struct EnumType {
 		string suffix = ", ";
 		if(fmt.spec == 'p') {
 			foreach(opt, val; options) {
-				sink.formattedWrite("option %s = %s; ", opt, val);
+				sink.formattedWrite("\toption %s = %s; \n", opt, val);
 			}
 			suffix = "; ";
 		}
 		foreach(key, val; values) {
-			sink.formattedWrite("%s = %s%s", key, val, suffix);
+			sink.formattedWrite("\t%s = %s%s \n", key, val, suffix);
 		}
 		sink("}\n");
 	}
@@ -117,7 +164,9 @@ struct Dependency {
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
-		if(fmt.spec == 'p') {
+		if(fmt.spec == 'p' || fmt.spec == 'd') {
+			if(fmt.spec == 'd')
+				sink("\n//NOTE: please change your import module.\n");
 			sink("import ");
 			if(isPublic) {
 				sink("public ");
@@ -128,46 +177,6 @@ struct Dependency {
 		}
 	}
 
-	string toD() @property const { return "%s".format(this); }
-}
-
-struct ProtoPackage {
-	this(string fileName) {
-		this.fileName = fileName.idup;
-	}
-	string fileName;
-	string packageName;
-	Dependency[] dependencies;
-	EnumType[] enumTypes;
-	MessageType[] messageTypes;
-	Options options;
-	Service[] rpcServices;
-	string syntax = "proto2";
-
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
-	{
-		if(fmt.spec == 'p') {
-			if(packageName) {
-				sink.formattedWrite("package %s; ", packageName);
-			}
-			if(syntax != "proto2") {
-				sink.formattedWrite(`syntax = %s; `, syntax);
-			}
-		}
-		foreach(dep; dependencies) {
-			dep.toString(sink, fmt);
-		}
-		foreach(e; enumTypes) e.toString(sink, fmt);
-		foreach(m; messageTypes) m.toString(sink, fmt);
-		foreach(r; rpcServices) r.toString(sink, fmt);
-		if(fmt.spec == 'p') {
-			foreach(opt, val; options) {
-				sink.formattedWrite("option %s = %s; ", opt, val);
-			}
-		}
-	}
-
-	string toProto() @property const { return "%p".format(this); }
 	string toD() @property const { return "%s".format(this); }
 }
 
@@ -202,11 +211,11 @@ struct Field {
 		switch(fmt.spec) {
 			case 'p':
 				if(fmt.width == 3 && requirement != Requirement.REPEATED) {
-					sink.formattedWrite("%s %s = %s%p; ",
+					sink.formattedWrite("\t%s %s = %s%p; \n",
 						type, name, id, options);
 				}
 				else {
-					sink.formattedWrite("%s %s %s = %s%p; ",
+					sink.formattedWrite("\t%s %s %s = %s%p; \n",
 						requirement.to!string.toLower(),
 						type, name, id, options);
 				}
@@ -215,7 +224,7 @@ struct Field {
 				if(!fmt.flDash) {
 					getDeclaration(sink);
 				} else {
-					sink.formattedWrite("%s %s;\n",
+					sink.formattedWrite("\t%s %s;\n",
 						type, name);
 				}
 				break;
@@ -224,13 +233,13 @@ struct Field {
 
 	void getDeclaration(scope void delegate(const(char)[]) sink) const {
 		if(requirement == Requirement.REQUIRED) {
-			sink("@(dproto.attributes.Required())\n");
+			sink("\t@(dproto.attributes.Required())\n");
 		} else if(requirement == Requirement.REPEATED) {
 			if(options.get("packed", "false") != "false") {
-				sink("@(dproto.attributes.Packed())\n");
+				sink("\t@(dproto.attributes.Packed())\n");
 			}
 		}
-		sink("@(dproto.attributes.ProtoField");
+		sink("\t@(dproto.attributes.ProtoField");
 		sink.formattedWrite(`("%s", %s)`, type, id);
 		sink(")\n");
 
@@ -239,13 +248,15 @@ struct Field {
 			! type.isBuiltinType();
 
 		if(wrap_with_nullable) {
+			sink("\t");
 			sink(`dproto.serialize.PossiblyNullable!(`);
 		}
 		string typestr = type;
 		if(type.isBuiltinType) {
 			typestr = format(`BuffType!"%s"`, type);
 		}
-
+		if(!wrap_with_nullable)
+			sink("\t");
 		sink(typestr);
 
 		if(wrap_with_nullable) {
@@ -300,11 +311,11 @@ struct Service {
 		{
 			switch(fmt.spec) {
 				case 'p':
-					sink.formattedWrite("rpc %s (%s) returns (%s)", name, requestType, responseType);
+					sink.formattedWrite("\trpc %s (%s) returns (%s)", name, requestType, responseType);
 					if(options.length > 0) {
 						sink(" {\n");
 						foreach(opt, val; options) {
-							sink.formattedWrite("option %s = %s;\n", opt, val);
+							sink.formattedWrite("\toption %s = %s;\n", opt, val);
 						}
 						sink("}\n");
 					} else {
@@ -313,11 +324,11 @@ struct Service {
 					break;
 				default:
 					if(fmt.precision == 3) {
-						sink.formattedWrite("%s %s (%s) { %s res; return res; }\n", responseType, name, requestType, responseType);
+						sink.formattedWrite("\t%s %s (%s) { %s res; return res; }\n", responseType, name, requestType, responseType);
 					} else if(fmt.precision == 2) {
-						sink.formattedWrite("void %s (const %s, ref %s);\n", name, requestType, responseType);
+						sink.formattedWrite("\tvoid %s (const %s, ref %s);\n", name, requestType, responseType);
 					} else if(fmt.precision == 1) {
-						sink.formattedWrite("%s %s (%s);\n", responseType, name, requestType);
+						sink.formattedWrite("\t%s %s (%s);\n", responseType, name, requestType);
 					}
 					break;
 			}
