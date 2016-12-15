@@ -194,11 +194,7 @@ unittest
 
 	// Force code coverage in doveralls
 	import std.string;
-	import std.format;
 	import dproto.parse;
-
-	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", serviceDefinition));
-
 	assert(__traits(compiles, ProtocolBufferFromString!serviceDefinition));
 	assert(__traits(compiles, ProtocolBufferInterface!serviceDefinition));
 	assert(__traits(compiles, ProtocolBufferRpc!serviceDefinition));
@@ -577,13 +573,10 @@ unittest
 	import dproto.parse;
 	import std.string : strip;
 
-	auto proto_src = `import "foo/baz.proto";` ~ "\n\n";
+	auto proto_src = `import "foo/baz.proto";`;
 	auto proto_struct = ParseProtoSchema("<none>", proto_src);
 	auto d_src = proto_struct.toD;
-	writeln(d_src);
-	writeln(cast(ubyte[])proto_src);
-	writeln(cast(ubyte[])d_src);
-	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
+	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src.strip,
 		"Mixin string should not have two double quotes " ~ d_src);
 	assert(proto_src == proto_struct.toProto.strip,
 		"Round tripping to protobuf source should yield starting text " ~ proto_struct.toProto);
@@ -728,10 +721,7 @@ unittest
 
 	// Force code coverage in doveralls
 	import std.string;
-	import std.format;
 	import dproto.parse;
-
-	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", pbstring));
 
 	mixin ProtocolBufferFromString!pbstring;
 
