@@ -17,6 +17,16 @@ import std.conv;
 import std.string;
 import std.format;
 
+struct ProtoConfig{
+	enum Type{
+		Proto,
+		Dcode,
+		Dfile
+	}
+	Type type = Type.Dcode;
+	int rpc = 1;
+}
+
 struct ProtoPackage {
 	this(string fileName) {
 		this.fileName = fileName.idup;
@@ -30,16 +40,16 @@ struct ProtoPackage {
 	Service[] rpcServices;
 	string syntax = "proto2";
 	
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink,ProtoConfig fmt = ProtoConfig())
 	{
-		if(fmt.spec == 'p') {
+		if(fmt.type  == ProtoConfig.Type.Proto) {
 			if(packageName) {
 				sink.formattedWrite("package %s; \n\n", packageName);
 			}
 			if(syntax != "proto2") {
 				sink.formattedWrite(`syntax = %s; \n`, syntax);
 			}
-		}else if(fmt.spec == 'd'){
+		}else if(fmt.type  == ProtoConfig.Type.Dfile){
 			if(packageName) {
 				sink.formattedWrite("module %s; \n\n", packageName);
 			}
@@ -53,15 +63,27 @@ struct ProtoPackage {
 		foreach(e; enumTypes){ e.toString(sink, fmt);sink("\n");}
 		foreach(m; messageTypes){ m.toString(sink, fmt); sink("\n");}
 		foreach(r; rpcServices){r.toString(sink, fmt);sink("\n");}
-		if(fmt.spec == 'p') {
+		if(fmt.type  == ProtoConfig.Type.Proto) {
 			foreach(opt, val; options) {
 				sink.formattedWrite("option %s = %s; \n", opt, val);
 			}
 		}
 	}
 	
-	string toProto() @property const { return "%p".format(this); }
-	string toD() @property const { return "%s".format(this); }
+	string toProto() @property const { 
+		import std.array;
+		Appender!string data = appender!string();
+		ProtoConfig fmt;
+		fmt.type = ProtoConfig.Type.Proto;
+		toString((const(char)[] str){data.put(str);},fmt);
+		return data.data;
+	}
+	string toD() @property const { 
+		import std.array;
+		Appender!string data = appender!string();
+		toString((const(char)[] str){data.put(str);});
+		return data.data;
+	}
 }
 
 
@@ -91,9 +113,9 @@ struct MessageType {
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink, ref ProtoConfig fmt)
 	{
-		if(fmt.spec == 'p') {
+		if(fmt.type  == ProtoConfig.Type.Proto) {
 			sink.formattedWrite("message %s { ", name);
 			foreach(opt, val; options) {
 				sink.formattedWrite("\toption %s = %s; ", opt, val);
@@ -112,7 +134,7 @@ struct MessageType {
 		sink("}\n");
 	}
 
-	string toD() @property const { return "%s".format(this); }
+	string toD() @property const {return "%s".format(this); }
 }
 
 struct EnumType {
@@ -123,11 +145,11 @@ struct EnumType {
 	Options options;
 	int[string] values;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink, ref ProtoConfig  fmt)
 	{
 		sink.formattedWrite("enum %s {\n", name);
 		string suffix = ", ";
-		if(fmt.spec == 'p') {
+		if(fmt.type  == ProtoConfig.Type.Proto) {
 			foreach(opt, val; options) {
 				sink.formattedWrite("\toption %s = %s; \n", opt, val);
 			}
@@ -164,16 +186,20 @@ struct Dependency {
 	string name;
 	bool isPublic;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink,ref ProtoConfig fmt)
 	{
-		if(fmt.spec == 'p' || fmt.spec == 'd') {
-			if(fmt.spec == 'd')
-				sink("\n//NOTE: please change your import module.\n");
+		if(fmt.type  == ProtoConfig.Type.Proto) {
 			sink("import ");
 			if(isPublic) {
 				sink("public ");
 			}
 		   sink.formattedWrite(`"%s"; `, name);
+		} else if(fmt.type  == ProtoConfig.Type.Dfile){
+			sink("\n//NOTE: please change your import module.\n");
+			if(isPublic) {
+				sink("public ");
+			}
+			sink.formattedWrite(`import "%s"; `, name);
 		} else {
 			sink.formattedWrite(`mixin ProtocolBuffer!"%s";`, name);
 		}
@@ -208,28 +234,14 @@ struct Field {
 		return options["default"];
 	}
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink, ref ProtoConfig fmt)
 	{
-		switch(fmt.spec) {
-			case 'p':
-				if(fmt.width == 3 && requirement != Requirement.REPEATED) {
-					sink.formattedWrite("\t%s %s = %s%p; \n",
-						type, name, id, options);
-				}
-				else {
-					sink.formattedWrite("\t%s %s %s = %s%p; \n",
-						requirement.to!string.toLower(),
-						type, name, id, options);
-				}
-				break;
-			default:
-				if(!fmt.flDash) {
-					getDeclaration(sink);
-				} else {
-					sink.formattedWrite("\t%s %s;\n",
-						type, name);
-				}
-				break;
+		if(fmt.type  == ProtoConfig.Type.Proto){
+			sink.formattedWrite("\t%s %s %s = %s%p; \n",
+			requirement.to!string.toLower(),
+			type, name, id, options);
+		} else {
+			getDeclaration(sink);
 		}
 	}
 
@@ -309,49 +321,43 @@ struct Service {
 		string responseType;
 		Options options;
 
-		const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+		const void toString(scope void delegate(const(char)[]) sink, ref ProtoConfig  fmt)
 		{
-			switch(fmt.spec) {
-				case 'p':
-					sink.formattedWrite("\trpc %s (%s) returns (%s)", name, requestType, responseType);
-					if(options.length > 0) {
-						sink(" {\n");
-						foreach(opt, val; options) {
-							sink.formattedWrite("\toption %s = %s;\n", opt, val);
-						}
-						sink("}\n");
-					} else {
-						sink(";\n");
+			if(fmt.type  == ProtoConfig.Type.Proto){
+				sink.formattedWrite("\trpc %s (%s) returns (%s)", name, requestType, responseType);
+				if(options.length > 0) {
+					sink(" {\n");
+					foreach(opt, val; options) {
+						sink.formattedWrite("\toption %s = %s;\n", opt, val);
 					}
-					break;
-				default:
-					if(fmt.precision == 3) {
-						sink.formattedWrite("\t%s %s (%s) { %s res; return res; }\n", responseType, name, requestType, responseType);
-					} else if(fmt.precision == 2) {
-						sink.formattedWrite("\tvoid %s (const %s, ref %s);\n", name, requestType, responseType);
-					} else if(fmt.precision == 1) {
-						sink.formattedWrite("\t%s %s (%s);\n", responseType, name, requestType);
-					}
-					break;
+					sink("}\n");
+				} else {
+					sink(";\n");
+				}
+			} else {
+				if(fmt.rpc == 3) {
+					sink.formattedWrite("\t%s %s (%s) { %s res; return res; }\n", responseType, name, requestType, responseType);
+				} else if(fmt.rpc == 2) {
+					sink.formattedWrite("\tvoid %s (const %s, ref %s);\n", name, requestType, responseType);
+				} else if(fmt.rpc == 1) {
+					sink.formattedWrite("\t%s %s (%s);\n", responseType, name, requestType);
+				}
 			}
 		}
 	}
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	const void toString(scope void delegate(const(char)[]) sink, ref ProtoConfig fmt)
 	{
-		switch(fmt.spec) {
-			case 'p':
+		if(fmt.type  == ProtoConfig.Type.Proto){
 				sink.formattedWrite("service %s {\n", name);
-				break;
-			default:
-				if(fmt.precision == 3) {
+		} else {
+			if(fmt.rpc == 3) {
 					sink.formattedWrite("class %s {\n", name);
-				} else if(fmt.precision == 2 || fmt.precision == 1) {
-					sink.formattedWrite("interface %s {\n", name);
-				} else {
-					return;
-				}
-				break;
+			} else if(fmt.rpc == 2 || fmt.rpc == 1) {
+				sink.formattedWrite("interface %s {\n", name);
+			} else {
+				return;
+			}
 		}
 		foreach(m; rpc) m.toString(sink, fmt);
 		sink("}\n");

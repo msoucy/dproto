@@ -11,6 +11,8 @@ module dproto.unittests;
 
 import dproto.dproto;
 
+import std.stdio;
+
 unittest
 {
 	assert(__traits(compiles, ProtocolBufferFromString!"message Test
@@ -575,9 +577,12 @@ unittest
 	import dproto.parse;
 	import std.string : strip;
 
-	auto proto_src = `import "foo/baz.proto";`;
+	auto proto_src = `import "foo/baz.proto";` ~ "\n\n";
 	auto proto_struct = ParseProtoSchema("<none>", proto_src);
 	auto d_src = proto_struct.toD;
+	writeln(d_src);
+	writeln(cast(ubyte[])proto_src);
+	writeln(cast(ubyte[])d_src);
 	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
 		"Mixin string should not have two double quotes " ~ d_src);
 	assert(proto_src == proto_struct.toProto.strip,
