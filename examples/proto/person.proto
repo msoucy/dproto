@@ -1,5 +1,7 @@
+package persion;
+
 message Person {
-  required string name = 1;
+  required string name = 1; // namnmknhi
   required int32 id = 2;
   optional string email = 3;
 
@@ -15,4 +17,16 @@ message Person {
   }
 
   repeated PhoneNumber phone = 4;
+}
+
+
+message ServiceRequest {
+    string request = 1;
+}
+message ServiceResponse {
+    string response = 1;
+}
+
+service TestService {
+    rpc TestMethod (ServiceRequest) returns (ServiceResponse);
 }
