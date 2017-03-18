@@ -5,3 +5,5 @@
 __test__library__
 dub.selections.json
 dproto_dprotoc
+*.lib
+*.exe
