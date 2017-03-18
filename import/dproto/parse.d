@@ -164,7 +164,10 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
 						string type = readSymbolName(context);
-						context.fields ~= readField(label, type, context);
+						auto newfield = readField(label, type, context);
+						unexpected(context.fields.all!(a => a.id != newfield.id)(),
+									"Repeated field ID");
+						context.fields ~= newfield;
 						return;
 					} else {
 						throw new DProtoSyntaxException("Fields must be nested");
@@ -611,7 +614,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		{
 			if (!value)
 			{
-				new DProtoSyntaxException(
+				throw new DProtoSyntaxException(
 					"Syntax error in %s at %d:%d: %s".format(fileName, line + 1,
 					(pos - lineStart + 1), message));
 			}
