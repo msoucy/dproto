@@ -179,7 +179,7 @@ void putProtoVal(alias __field, R)(auto ref R r, ulong __msgdata)
 		ElementType!T u;
 		if (wireType.msgType != PACKED_MSG_TYPE && __msgdata.wireType == PACKED_MSG_TYPE)
 		{
-			ulong nelems = r.readVarint();
+			size_t nelems = cast(size_t)r.readVarint();
 			auto packeddata = takeExactly(r, nelems);
 			while(!packeddata.empty)
 			{

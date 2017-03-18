@@ -12,21 +12,21 @@ import std.exception;
  * Basic exception, something went wrong with creating a buffer struct
  */
 class DProtoException : Exception {
-	this(string msg, string file=__FILE__, ulong line=__LINE__) {
-		super(msg, file, line);
+	this(string msg, string file=__FILE__, size_t line=__LINE__, Throwable next=null) {
+		super(msg, file, line, next);
 	}
 }
 
 class DProtoReservedWordException : DProtoException {
-	this(string word, string file=__FILE__, ulong line=__LINE__) {
-		super("Reserved word: "~word, file, line);
+	this(string word, string file=__FILE__, size_t line=__LINE__, Throwable next=null) {
+		super("Reserved word: "~word, file, line, next);
 		keyword = word;
 	}
 	string keyword;
 }
 
 class DProtoSyntaxException : DProtoException {
-	this(string msg, string file=__FILE__, ulong line=__LINE__) {
-		super(msg, file, line);
+	this(string msg, string file=__FILE__, size_t line=__LINE__, Throwable next=null) {
+		super(msg, file, line, next);
 	}
 }
