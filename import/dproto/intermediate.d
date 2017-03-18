@@ -55,7 +55,7 @@ struct MessageType {
 
 			// Methods for serialization and deserialization.
 			sink("static import dproto.attributes;\n");
-			sink(`mixin dproto.attributes.ProtoAccessors;`);
+			sink("mixin dproto.attributes.ProtoAccessors;\n");
 		}
 		foreach(et; enumTypes) et.toString(sink, fmt);
 		foreach(mt; messageTypes) mt.toString(sink, fmt);
