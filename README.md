@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/msoucy/dproto.png?label=ready&title=Ready)](https://waffle.io/msoucy/dproto)
 # D Protocol Buffers
 
 ----
