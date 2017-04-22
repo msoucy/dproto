@@ -77,7 +77,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 			switch(label) {
 				case "syntax": {
 					static if(is(Context==ProtoPackage)) {
-						unexpected(context.syntax == null, "too many syntax statements");
+						unexpected(context.syntax == null, "Too many syntax statements");
 						unexpected(readChar() == '=', "Expected '=' after 'syntax'");
 						unexpected(peekChar() == '"', `Expected opening quote '"' after 'syntax ='`);
 						context.syntax = readQuotedString();
@@ -476,7 +476,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				}
 				else
 				{
-					throw new DProtoReservedWordException(name);
+					throw new DProtoReservedWordException("Reserved word: "~name);
 				}
 			}
 			return name;
@@ -612,9 +612,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		{
 			if (!value)
 			{
-				throw new DProtoSyntaxException(
-					"Syntax error in %s at %d:%d: %s".format(fileName, line + 1,
-					(pos - lineStart + 1), message));
+				throw new DProtoSyntaxException(message, fileName, line + 1);
 			}
 		}
 
