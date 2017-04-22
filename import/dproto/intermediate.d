@@ -140,7 +140,7 @@ struct ProtoPackage {
 	MessageType[] messageTypes;
 	Options options;
 	Service[] rpcServices;
-	string syntax = "proto2";
+	string syntax;
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
@@ -148,7 +148,7 @@ struct ProtoPackage {
 			if(packageName) {
 				sink.formattedWrite("package %s; ", packageName);
 			}
-			if(syntax != "proto2") {
+			if(syntax !is null && syntax != "proto2") {
 				sink.formattedWrite(`syntax = %s; `, syntax);
 			}
 		}
