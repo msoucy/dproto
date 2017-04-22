@@ -3,9 +3,7 @@
  *
  * Provides accessors for D string and D structs from proto files/data
  *
- * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Apr 1, 2015
- * Version: 0.0.3
+ * Authors: Matthew Soucy, dproto@msoucy.me
  */
 module dproto.dproto;
 

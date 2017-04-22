@@ -1,9 +1,7 @@
 /*******************************************************************************
  * Convert a .proto file into a string representing the class
  *
- * Author: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Oct 5, 2013
- * Version: 0.0.2
+ * Author: Matthew Soucy, dproto@msoucy.me
  */
 module dproto.parse;
 

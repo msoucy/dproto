@@ -1,9 +1,7 @@
 /*******************************************************************************
  * Compatibility layer for different D/Phobos versions
  *
- * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: Oct 28, 2015
- * Version: 1.3.2
+ * Authors: Matthew Soucy, dproto@msoucy.me
  */
 module dproto.compat;
 

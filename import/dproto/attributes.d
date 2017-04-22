@@ -1,9 +1,7 @@
 /*******************************************************************************
  * User-Defined Attributes used to tag fields as dproto-serializable
  *
- * Authors: Matthew Soucy, msoucy@csh.rit.edu
- * Date: May 6, 2015
- * Version: 1.3.0
+ * Authors: Matthew Soucy, dproto@msoucy.me
  */
 module dproto.attributes;
 
