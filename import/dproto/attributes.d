@@ -95,6 +95,25 @@ template ProtoAccessors()
 		}
 	}
 
+	void mergeFrom(this This)(auto ref This rhs)
+	{
+		import std.traits : Identity;
+		import dproto.attributes;
+
+		foreach(__member; ProtoFields!this) {
+			alias __lmember = Identity!(__traits(getMember, this, __member));
+			alias T = typeof(__lmember);
+
+			static if(is(T : const string) || is(T : const(ubyte)[])) {
+				__lmember = __traits(getMember, rhs, __member);
+			} else static if(is(T : const(U)[], U)) {
+				__lmember ~= __traits(getMember, rhs, __member);
+			} else {
+				__lmember = __traits(getMember, rhs, __member);
+			}
+		}
+	}
+
 	version(Have_painlessjson) {
 		auto toJson() const {
 			import painlessjson;

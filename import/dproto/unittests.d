@@ -1024,3 +1024,55 @@ unittest
 	assert(proto.a1.foo1 == proto.a2.foo1);
 }
 
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	message Person {
+		required string name = 1;
+		required int32 id = 2;
+		optional string email = 3;
+
+		enum PhoneType {
+			MOBILE = 0;
+			HOME = 0;
+			WORK = 2;
+		}
+
+		message PhoneNumber {
+			required string number = 1;
+			optional PhoneType type = 2 [default = HOME];
+		}
+
+		repeated PhoneNumber phone = 4;
+	}
+	";
+
+	Person t;
+	t.name = "Max Musterman";
+	t.id = 3;
+	t.email = "Max.Musterman@example.com";
+
+	Person.PhoneNumber pn1;
+	pn1.number = "0123456789";
+	pn1.type = Person.PhoneType.WORK;
+	t.phone ~= pn1;
+
+	Person t2 = t;
+	t2.id = 5;
+	t2.email = "Namretsum.Xam@example.com";
+
+	Person.PhoneNumber pn2;
+	pn2.number = "9876543210";
+	pn2.type = Person.PhoneType.HOME;
+	t2.phone = [pn2];
+
+	import std.stdio;
+	t.mergeFrom(t2);
+	assert(t.phone.length == 2);
+	assert(t.phone[0] == pn1);
+	assert(t.phone[1] == pn2);
+	assert(t.id == t.id);
+	assert(t.email == t2.email);
+
+}
+
