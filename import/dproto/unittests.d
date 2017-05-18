@@ -7,6 +7,11 @@ module dproto.unittests;
 
 import dproto.dproto;
 
+private string ut_mixin_name(size_t ln = __LINE__) {
+	import std.format;
+	return "ut_%s.proto".format(ln);
+}
+
 unittest
 {
 	assert(__traits(compiles, ProtocolBufferFromString!"message Test
@@ -191,7 +196,7 @@ unittest
 	import std.format;
 	import dproto.parse;
 
-	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", serviceDefinition));
+	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema(ut_mixin_name(), serviceDefinition));
 
 	assert(__traits(compiles, ProtocolBufferFromString!serviceDefinition));
 	assert(__traits(compiles, ProtocolBufferInterface!serviceDefinition));
@@ -572,7 +577,7 @@ unittest
 	import std.string : strip;
 
 	auto proto_src = `import "foo/baz.proto";`;
-	auto proto_struct = ParseProtoSchema("<none>", proto_src);
+	auto proto_struct = ParseProtoSchema(ut_mixin_name(), proto_src);
 	auto d_src = proto_struct.toD;
 	assert(`mixin ProtocolBuffer!"foo/baz.proto";` == d_src,
 		"Mixin string should not have two double quotes " ~ d_src);
@@ -722,7 +727,7 @@ unittest
 	import std.format;
 	import dproto.parse;
 
-	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema("<none>", pbstring));
+	auto normalizedServiceDefinition = "%3.3p".format(ParseProtoSchema(ut_mixin_name(), pbstring));
 
 	mixin ProtocolBufferFromString!pbstring;
 
@@ -750,13 +755,13 @@ message Info {
 }
 	};
 	assertThrown!DProtoReservedWordException(ParseProtoSchema(
-				"<none>",
+				ut_mixin_name(),
 				`option dproto_reserved_fmt = "%s"; ` ~ pbstring));
 	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
-				"<none>",
+				ut_mixin_name(),
 				`option dproto_reserved_fmt = "%s_"; ` ~ pbstring));
 	assertNotThrown!DProtoReservedWordException(ParseProtoSchema(
-				"<none>", pbstring));
+				ut_mixin_name(), pbstring));
 }
 
 unittest
@@ -826,7 +831,7 @@ unittest
     }
 };
 	mixin ProtocolBufferFromString!pbstring;
-	assert(ParseProtoSchema("<none>", pbstring).toD());
+	assert(ParseProtoSchema(ut_mixin_name(), pbstring).toD());
 }
 
 unittest
@@ -864,7 +869,7 @@ unittest
         required bool notReservedWord;
     }
 };
-	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+	assertThrown!DProtoSyntaxException(ParseProtoSchema(ut_mixin_name(), pbstring));
 }
 
 unittest
@@ -900,7 +905,7 @@ unittest
     `;
 	static assert(__traits(compiles, ProtocolBufferFromString!syntaxProto2));
 
-    enum schemaProto2 = ParseProtoSchema("<none>", syntaxProto2);
+    enum schemaProto2 = ParseProtoSchema(ut_mixin_name(), syntaxProto2);
     static assert(schemaProto2.syntax == `"proto2"`);
 
     enum syntaxProto3 = `
@@ -908,7 +913,7 @@ unittest
     `;
 	static assert(__traits(compiles, ProtocolBufferFromString!syntaxProto3));
 
-    enum schemaProto3 = ParseProtoSchema("<none>", syntaxProto3);
+    enum schemaProto3 = ParseProtoSchema(ut_mixin_name(), syntaxProto3);
     static assert(schemaProto3.syntax == `"proto3"`);
 
     enum syntaxNoEquals = `
@@ -960,7 +965,7 @@ unittest
 	enum pbstring = q{
 	import public "proto/example.proto";
 };
-	assert(ParseProtoSchema("<none>", pbstring).toD());
+	assert(ParseProtoSchema(ut_mixin_name(), pbstring).toD());
 }
 
 unittest
@@ -977,7 +982,7 @@ unittest
 		THREE = 3;
 	}
 };
-	assertThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+	assertThrown!DProtoSyntaxException(ParseProtoSchema(ut_mixin_name(), pbstring));
 
 	enum pbstring2 = q{
 	enum Foo {
@@ -986,7 +991,7 @@ unittest
 		THREE = 3;
 	}
 };
-	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring2));
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema(ut_mixin_name(), pbstring2));
 }
 
 unittest
@@ -1000,7 +1005,7 @@ unittest
 	enum pbstring = `
 		syntax = "proto3";
 	`;
-	assertNotThrown!DProtoSyntaxException(ParseProtoSchema("<none>", pbstring));
+	assertNotThrown!DProtoSyntaxException(ParseProtoSchema(ut_mixin_name(), pbstring));
 }
 
 unittest
@@ -1026,6 +1031,7 @@ unittest
 
 unittest
 {
+	// Issue #109
 	mixin ProtocolBufferFromString!"
 	message Person {
 		required string name = 1;
