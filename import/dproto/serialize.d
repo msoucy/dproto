@@ -235,13 +235,13 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T readVarint(R, T = ulong)(auto ref R src)
+T readVarint(T = ulong, R)(auto ref R src)
 	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
 	auto ret = src.take(i);
 	src.popFrontExactly(i);
-	return ret.fromVarint();
+	return ret.fromVarint!T();
 }
 
 /*******************************************************************************
@@ -393,10 +393,12 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
 BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "int32".msgType)
 {
+	alias T2=BuffType!T;
 	static if(T == "sint32" || T == "sint64")
-		return src.readVarint().fromZigZag().to!(BuffType!T)();
+		// TODO:readVarint!(Unsigned!T2)() ?
+		return src.readVarint().fromZigZag().to!T2();
 	else
-		return src.readVarint().to!(BuffType!T)();
+		return src.readVarint!T2();
 }
 
 /// Ditto
