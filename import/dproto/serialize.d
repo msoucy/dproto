@@ -395,10 +395,30 @@ BuffType!T readProto(string T, R)(auto ref R src)
 {
 	alias T2=BuffType!T;
 	static if(T == "sint32" || T == "sint64")
-		// TODO:readVarint!(Unsigned!T2)() ?
+		// TODO:which one?
+		//return src.readVarint!(Unsigned!T2)().fromZigZag().to!T2();
 		return src.readVarint().fromZigZag().to!T2();
 	else
 		return src.readVarint!T2();
+}
+
+unittest{
+	import std.meta:AliasSeq;
+	// BUG with: "sint64" , "sint32"
+	foreach(T;AliasSeq!("int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64")){
+		alias T2=BuffType!T;
+		auto r = appender!(ubyte[])();
+		T2 src=-1;
+		r.writeProto!T(src);
+		/+
+		BUG: "sint32" => depending on whether I have:
+		readVarint().fromZigZag() => Conversion negative overflow
+		readVarint!(Unsigned!T2) => Varint value is too big for the type uint
+		+/
+		T2 src2 = readProto!T(r.data);
+		// BUG: "sint64" => unittest failure
+		assert(src==src2);
+	}
 }
 
 /// Ditto
