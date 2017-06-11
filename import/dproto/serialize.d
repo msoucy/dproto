@@ -398,6 +398,8 @@ BuffType!T readProto(string T, R)(auto ref R src)
 		// TODO:which one?
 		//return src.readVarint!(Unsigned!T2)().fromZigZag().to!T2();
 		return src.readVarint().fromZigZag().to!T2();
+	else static if(T == "bool")
+		return src.readVarint.to!T2();
 	else
 		return src.readVarint!T2();
 }
@@ -405,10 +407,13 @@ BuffType!T readProto(string T, R)(auto ref R src)
 unittest{
 	import std.meta:AliasSeq;
 	// BUG with: "sint64" , "sint32"
-	foreach(T;AliasSeq!("int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64")){
+	foreach(T;AliasSeq!("bool", "int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64")){
 		alias T2=BuffType!T;
 		auto r = appender!(ubyte[])();
-		T2 src=-1;
+		static if(is(T2==bool))
+			T2 src=false;
+		else
+			T2 src=-1;
 		r.writeProto!T(src);
 		/+
 		BUG: "sint32" => depending on whether I have:
