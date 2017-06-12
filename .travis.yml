@@ -2,13 +2,17 @@ sudo: false
 language: d
 d:
   - dmd
-  - dmd-2.071.1
-  - dmd-2.066.1
+  - dmd-2.071.2
+  - dmd-2.068.2
+  - dmd-2.067.1
   - gdc
-  - gdc-4.9.3
+  - gdc-6.3.0
+  - gdc-4.9.2
+  - gdc-4.6.3
   - ldc
-  - ldc-1.0.0
-  - ldc-0.17.1
+  - ldc-1.1.1
+  - ldc-0.17.3
+  - ldc-0.16.1
 before_install:
   - dub fetch doveralls
 script:
