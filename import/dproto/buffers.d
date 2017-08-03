@@ -405,6 +405,8 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 	/** serialize as JSON */
 	string toJson() {
+		static import std.json;
+
 		string ret = "[";
 		if(raw.length) {
 			if(ret.length > 1) {

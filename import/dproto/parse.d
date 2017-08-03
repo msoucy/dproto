@@ -164,6 +164,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_) {
 						return;
 					} else {
 						static if( hasMember!(Context, "fields") ) {
+							static import dproto.serialize;
 							if(dproto.serialize.IsBuiltinType(label)) {
 								context.fields ~= readField("optional", label);
 								return;
