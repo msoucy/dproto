@@ -11,7 +11,7 @@ d:
   - gdc-4.6.3
   - ldc
   - ldc-1.1.1
-  - ldc-0.17.3
+  - ldc-0.17.2
   - ldc-0.16.1
 before_install:
   - dub fetch doveralls
