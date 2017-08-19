@@ -18,9 +18,5 @@ addons:
   apt:
     packages:
     - libatomic1
-before_install:
-  - dub fetch doveralls
 script:
   - dub test --coverage
-after_success:
-  - dub run doveralls
