@@ -106,12 +106,14 @@ struct Extension {
 }
 
 struct Dependency {
-	this(string depname, bool isPublic = false) {
+	this(string depname, bool isPublic = false, bool isWeak = false) {
 		this.name = depname;
 		this.isPublic = isPublic;
+		this.isWeak = isWeak;
 	}
 	string name;
 	bool isPublic;
+	bool isWeak;
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{

@@ -102,12 +102,16 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				case "import": {
 					static if(is(Context==ProtoPackage)) {
 						bool isPublicImport = false;
+						bool isWeakImport = false;
 						if(peekChar() == 'p') {
 							unexpected(readWord() == "public", "Expected 'public'");
 							isPublicImport = true;
+						} else if(peekChar() == 'w') {
+							unexpected(readWord() == "weak", "Expected 'weak'");
+							isWeakImport = true;
 						}
 						if(peekChar() == '"') {
-							context.dependencies ~= Dependency(readQuotedPath (), isPublicImport);
+							context.dependencies ~= Dependency(readQuotedPath (), isPublicImport, isWeakImport);
 						}
 						unexpected(readChar() == ';', "Expected ';'");
 						return;
@@ -506,6 +510,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				if (tag.startsWith("0x")) {
 					tag = tag["0x".length .. $];
 					radix = 16;
+				}
+				else if (tag.startsWith("0")) {
+					radix = 8;
 				}
 				return tag.to!int(radix);
 			} catch (Exception e) {
