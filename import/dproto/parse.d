@@ -45,6 +45,8 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		/** The index of the most recent newline character. */
 		int lineStart;
 
+		/** Are we parsing proto 3 syntax? */
+		bool isProto3;
 
 		ProtoPackage readProtoPackage() {
 			auto ret = ProtoPackage(fileName);
@@ -83,6 +85,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 						context.syntax = readQuotedString();
 						unexpected(context.syntax == `"proto2"` || context.syntax == `"proto3"`,
 						           "Unexpected syntax version: `" ~ context.syntax ~ "`");
+						isProto3 = context.syntax == `"proto3"`;
 						unexpected(readChar() == ';', "Expected ';' after syntax declaration");
 						return;
 					} else {
@@ -163,6 +166,10 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				}
 				case "required":
 				case "optional":
+					if( isProto3 ) {
+						throw new DProtoSyntaxException("Field label '" ~ label ~ "' not allowed");
+					}
+					goto case;
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
 						string type = readSymbolName(context);
@@ -174,6 +181,10 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 					} else {
 						throw new DProtoSyntaxException("Fields must be nested");
 					}
+				}
+				case "map":
+				case "oneof": {
+					throw new DProtoSyntaxException("'" ~ label ~ "' not yet implemented");
 				}
 				case "extensions": {
 					static if(!is(Context==ProtoPackage)) {
@@ -197,16 +208,18 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 						context.values[label] = tag;
 						return;
 					}
+					else static if (hasMember!(Context, "fields"))
+					{
+							string type = reservedName(context, label);
+							auto newfield = readField("optional", type, context);
+							unexpected(context.fields.all!(a => a.id != newfield.id)(),
+										"Repeated field ID");
+							context.fields ~= newfield;
+							return;
+					}
 					else
 					{
-						static if (hasMember!(Context, "fields"))
-						{
-							if (isBuiltinType(label))
-							{
-								context.fields ~= readField("optional", label, context);
-								return;
-							}
-						}
+						
 						throw new DProtoSyntaxException("unexpected label: `" ~ label ~ '`');
 					}
 				}
@@ -468,6 +481,11 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		/** Reads a symbol name */
 		string readSymbolName(Context)(Context context) {
 			string name = readWord();
+			return reservedName(context, name);
+		}
+
+		/** Format a reserved D name */
+		string reservedName(Context)(Context context, string name) {
 			if(isDKeyword(name))
 			{
 				// Wrapped in quotes to properly evaluate string
