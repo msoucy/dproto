@@ -444,6 +444,14 @@ unittest
 {
 	mixin ProtocolBufferFromString!"
 	message Person {
+		map<uint32,string> telephone = 1;
+	}";
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	message Person {
 		required string name = 1;
 		required int32 id = 2;
 		optional string email = 3;
