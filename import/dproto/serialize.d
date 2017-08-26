@@ -235,13 +235,13 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T readVarint(R, T = ulong)(auto ref R src)
+T readVarint(T = ulong, R)(auto ref R src)
 	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
 	auto ret = src.take(i);
 	src.popFrontExactly(i);
-	return ret.fromVarint();
+	return ret.fromVarint!T();
 }
 
 /*******************************************************************************
@@ -393,10 +393,37 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
 BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "int32".msgType)
 {
+	alias T2=BuffType!T;
 	static if(T == "sint32" || T == "sint64")
-		return src.readVarint().fromZigZag().to!(BuffType!T)();
+		// TODO:which one?
+		//return src.readVarint!(Unsigned!T2)().fromZigZag().to!T2();
+		return src.readVarint().fromZigZag().to!T2();
+	else static if(T == "bool")
+		return src.readVarint.to!T2();
 	else
-		return src.readVarint().to!(BuffType!T)();
+		return src.readVarint!T2();
+}
+
+unittest{
+	import std.meta:AliasSeq;
+	// BUG with: "sint64" , "sint32"
+	foreach(T;AliasSeq!("bool", "int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64")){
+		alias T2=BuffType!T;
+		auto r = appender!(ubyte[])();
+		static if(is(T2==bool))
+			T2 src=false;
+		else
+			T2 src=-1;
+		r.writeProto!T(src);
+		/+
+		BUG: "sint32" => depending on whether I have:
+		readVarint().fromZigZag() => Conversion negative overflow
+		readVarint!(Unsigned!T2) => Varint value is too big for the type uint
+		+/
+		T2 src2 = readProto!T(r.data);
+		// BUG: "sint64" => unittest failure
+		assert(src==src2);
+	}
 }
 
 /// Ditto
