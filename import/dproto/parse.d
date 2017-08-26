@@ -11,12 +11,16 @@ import dproto.serialize : isBuiltinType;
 
 import std.algorithm;
 import std.array;
+import std.ascii;
 import std.conv;
 import std.exception;
+import std.format;
 import std.stdio;
 import std.string;
-import std.format;
 import std.traits;
+
+enum wordPattern = std.ascii.letters ~ std.ascii.digits ~ `_.\-`;
+enum pathPattern = wordPattern ~ `/`;
 
 /**
  * Basic parser for {@code .proto} schema declarations.
@@ -45,6 +49,8 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		/** The index of the most recent newline character. */
 		int lineStart;
 
+		/** Are we parsing proto 3 syntax? */
+		bool isProto3;
 
 		ProtoPackage readProtoPackage() {
 			auto ret = ProtoPackage(fileName);
@@ -83,6 +89,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 						context.syntax = readQuotedString();
 						unexpected(context.syntax == `"proto2"` || context.syntax == `"proto3"`,
 						           "Unexpected syntax version: `" ~ context.syntax ~ "`");
+						isProto3 = context.syntax == `"proto3"`;
 						unexpected(readChar() == ';', "Expected ';' after syntax declaration");
 						return;
 					} else {
@@ -163,6 +170,10 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				}
 				case "required":
 				case "optional":
+					if( isProto3 ) {
+						throw new DProtoSyntaxException("Field label '" ~ label ~ "' not allowed");
+					}
+					goto case;
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
 						string type = readSymbolName(context);
@@ -174,6 +185,10 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 					} else {
 						throw new DProtoSyntaxException("Fields must be nested");
 					}
+				}
+				case "map":
+				case "oneof": {
+					throw new DProtoSyntaxException("'" ~ label ~ "' not yet implemented");
 				}
 				case "extensions": {
 					static if(!is(Context==ProtoPackage)) {
@@ -197,16 +212,17 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 						context.values[label] = tag;
 						return;
 					}
+					else static if (hasMember!(Context, "fields"))
+					{
+							string type = reservedName(context, label);
+							auto newfield = readField("optional", type, context);
+							unexpected(context.fields.all!(a => a.id != newfield.id)(),
+										"Repeated field ID");
+							context.fields ~= newfield;
+							return;
+					}
 					else
 					{
-						static if (hasMember!(Context, "fields"))
-						{
-							if (isBuiltinType(label))
-							{
-								context.fields ~= readField("optional", label, context);
-								return;
-							}
-						}
 						throw new DProtoSyntaxException("unexpected label: `" ~ label ~ '`');
 					}
 				}
@@ -332,6 +348,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 			}
 			if (c == ';') {
 				pos++;
+				if (labelEnum != Field.Requirement.REPEATED && options.get("packed", "false") != "false") {
+					throw new DProtoSyntaxException("[packed = true] can only be specified for repeated primitive fields");
+				}
 				return Field(labelEnum, type, name, tag, options);
 			}
 			throw new DProtoSyntaxException("Expected ';'");
@@ -442,7 +461,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		string readQuotedPath() {
 			skipWhitespace(true);
 			unexpected(readChar() == '"', "imports should be quoted");
-			auto ret = readWord(`a-zA-Z0-9_.\-/`);
+			auto ret = readWord(pathPattern);
 			unexpected(readChar() == '"', "imports should be quoted");
 			return ret;
 		}
@@ -468,6 +487,11 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		/** Reads a symbol name */
 		string readSymbolName(Context)(Context context) {
 			string name = readWord();
+			return reservedName(context, name);
+		}
+
+		/** Format a reserved D name */
+		string reservedName(Context)(Context context, string name) {
 			if(isDKeyword(name))
 			{
 				// Wrapped in quotes to properly evaluate string
@@ -487,12 +511,12 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		}
 
 		/** Reads a non-empty word and returns it. */
-		string readWord(string pattern = `a-zA-Z0-9_.\-`) {
+		string readWord(string pattern = wordPattern) {
 			skipWhitespace(true);
 			int start = pos;
 			while (pos < data.length) {
 				char c = data[pos];
-				if(c.inPattern(pattern)) {
+				if(pattern.canFind(c)) {
 					pos++;
 				} else {
 					break;

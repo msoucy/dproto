@@ -224,6 +224,21 @@ unittest
 	mixin ProtocolBufferFromString!"
 	enum PhoneType {
 		MOBILE = 0;
+		HOME = 0xf;
+		WORK = 071;
+	}
+	";
+
+	assert(PhoneType.MOBILE == 0);
+	assert(PhoneType.HOME == 15);
+	assert(PhoneType.WORK == 57);
+}
+
+unittest
+{
+	mixin ProtocolBufferFromString!"
+	enum PhoneType {
+		MOBILE = 0;
 		HOME = 0;
 		WORK = 2;
 	}
