@@ -345,6 +345,9 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 			}
 			if (c == ';') {
 				pos++;
+				if (labelEnum != Field.Requirement.REPEATED && options.get("packed", "false") != "false") {
+					throw new DProtoSyntaxException("[packed = true] can only be specified for repeated primitive fields");
+				}
 				return Field(labelEnum, type, name, tag, options);
 			}
 			throw new DProtoSyntaxException("Expected ';'");
