@@ -16,6 +16,8 @@ import std.range;
 import std.system : Endian;
 import std.traits;
 
+@safe:
+
 /*******************************************************************************
  * Returns whether the given string is a protocol buffer primitive
  *
@@ -251,6 +253,8 @@ T readVarint(R, T = ulong)(auto ref R src)
  *  	r = output range
  *  	src = The value to encode
  * Returns: The created VarInt
+ * 
+ * Note: This is @trusted for compatibility with @system R.put().
  */
 void toVarint(R, T)(ref R r, T src) @safe @property
 	if(isOutputRange!(R, ubyte) && isIntegral!T && isUnsigned!T)
@@ -276,6 +280,7 @@ void toVarint(R, T)(ref R r, T src) @safe @property
  *  	r = output range
  *  	src = The value to encode
  * Returns: The created VarInt
+ * 
  */
 void toVarint(R)(ref R r, long src) @safe @property
 	if(isOutputRange!(R, ubyte))
@@ -309,6 +314,8 @@ unittest {
  * Params:
  *  	src = The data stream
  * Returns: The decoded value
+ * 
+ * Note: This is @trusted for compatibility with @system R.put().
  */
 T fromVarint(T = ulong, R)(R src) @property
 	if(isInputRange!R && is(ElementType!R : const ubyte) &&
@@ -454,7 +461,7 @@ void writeProto(string T, R)(ref R r, BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src) @trusted
 	if(isProtoOutputRange!R &&
 	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
@@ -463,11 +470,11 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 }
 
 /// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
+void writeProto(string T, R)(ref R r, const BuffType!T src) @trusted
 	if(isProtoOutputRange!R && T.msgType == "string".msgType)
 {
 	toVarint(r, src.length);
-	r.put(cast(ubyte[])src);
+	r.put(cast(const ubyte[]) src);
 }
 
 /*******************************************************************************
