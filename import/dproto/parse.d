@@ -11,12 +11,16 @@ import dproto.serialize : isBuiltinType;
 
 import std.algorithm;
 import std.array;
+import std.ascii;
 import std.conv;
 import std.exception;
+import std.format;
 import std.stdio;
 import std.string;
-import std.format;
 import std.traits;
+
+enum wordPattern = std.ascii.letters ~ std.ascii.digits ~ `_.\-`;
+enum pathPattern = wordPattern ~ `/`;
 
 /**
  * Basic parser for {@code .proto} schema declarations.
@@ -219,7 +223,6 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 					}
 					else
 					{
-						
 						throw new DProtoSyntaxException("unexpected label: `" ~ label ~ '`');
 					}
 				}
@@ -458,7 +461,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		string readQuotedPath() {
 			skipWhitespace(true);
 			unexpected(readChar() == '"', "imports should be quoted");
-			auto ret = readWord(`a-zA-Z0-9_.\-/`);
+			auto ret = readWord(pathPattern);
 			unexpected(readChar() == '"', "imports should be quoted");
 			return ret;
 		}
@@ -508,12 +511,12 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		}
 
 		/** Reads a non-empty word and returns it. */
-		string readWord(string pattern = `a-zA-Z0-9_.\-`) {
+		string readWord(string pattern = wordPattern) {
 			skipWhitespace(true);
 			int start = pos;
 			while (pos < data.length) {
 				char c = data[pos];
-				if(c.inPattern(pattern)) {
+				if(pattern.canFind(c)) {
 					pos++;
 				} else {
 					break;
