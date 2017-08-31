@@ -235,13 +235,13 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T readVarint(R, T = ulong)(auto ref R src)
+T readVarint(T = ulong, R)(auto ref R src)
 	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
 	auto ret = src.take(i);
 	src.popFrontExactly(i);
-	return ret.fromVarint();
+	return ret.fromVarint!T();
 }
 
 /*******************************************************************************
@@ -393,10 +393,13 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
 BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "int32".msgType)
 {
+	alias BT = BuffType!T;
 	static if(T == "sint32" || T == "sint64")
-		return src.readVarint().fromZigZag().to!(BuffType!T)();
+		return src.readVarint!(Unsigned!BT).fromZigZag;
+	else static if(T == "bool")
+		return src.readVarint.to!BT;
 	else
-		return src.readVarint().to!(BuffType!T)();
+		return src.readVarint!BT;
 }
 
 /// Ditto
@@ -468,6 +471,29 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 {
 	toVarint(r, src.length);
 	r.put(cast(ubyte[])src);
+}
+
+// Unit test for issue #115
+unittest
+{
+	static if (__traits(compiles, {import std.meta : AliasSeq;})) {
+		import std.meta : AliasSeq;
+	} else {
+		import std.typetuple : TypeTuple;
+		alias AliasSeq = TypeTuple;
+	}
+
+	foreach (T; AliasSeq!("bool", "int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64")) {
+		alias T2 = BuffType!T;
+		auto r = appender!(ubyte[])();
+		static if (is(T2 == bool))
+			T2 src = false;
+		else
+			T2 src = -1;
+		r.writeProto!T(src);
+		T2 src2 = readProto!T(r.data);
+		assert(src == src2);
+	}
 }
 
 /*******************************************************************************
