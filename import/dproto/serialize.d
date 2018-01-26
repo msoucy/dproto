@@ -148,7 +148,7 @@ auto msgType(string T) pure nothrow @safe {
  *  	src = The raw integer to encode
  * Returns: The zigzag-encoded value
  */
-@nogc Unsigned!T toZigZag(T)(in T src) pure nothrow @safe @property
+@nogc Unsigned!T toZigZag(T)(T src) pure nothrow @safe @property
 	if(isIntegral!T && isSigned!T)
 {
 	return cast(Unsigned!T)(
@@ -174,7 +174,7 @@ unittest {
  *  	src = The zigzag-encoded value to decode
  * Returns: The raw integer
  */
-@nogc Signed!T fromZigZag(T)(in T src) pure nothrow @safe @property
+@nogc Signed!T fromZigZag(T)(T src) pure nothrow @safe @property
 	if(isIntegral!T && isUnsigned!T)
 {
 	return (src & 1) ?
@@ -189,6 +189,12 @@ unittest {
 	assert(3U.fromZigZag() == -2);
 	assert(4294967294U.fromZigZag() == 2147483647);
 	assert(4294967295U.fromZigZag() == -2147483648);
+
+  foreach(i;-3..3){
+    assert(i.toZigZag.fromZigZag == i);
+    long i2=i;
+    assert(i2.toZigZag.fromZigZag == i2);
+  }
 }
 
 /*******************************************************************************
@@ -235,13 +241,13 @@ unittest {
  *  	src = The data stream
  * Returns: The decoded value
  */
-T readVarint(R, T = ulong)(auto ref R src)
+T readVarint(T = ulong, R)(auto ref R src)
 	if(isInputRange!R && is(ElementType!R : const ubyte))
 {
 	auto i = src.countUntil!( a=>!(a&0x80) )() + 1;
 	auto ret = src.take(i);
 	src.popFrontExactly(i);
-	return ret.fromVarint();
+	return ret.fromVarint!T();
 }
 
 /*******************************************************************************
@@ -393,10 +399,13 @@ enum isProtoInputRange(R) = isInputRange!R && is(ElementType!R : const ubyte);
 BuffType!T readProto(string T, R)(auto ref R src)
 	if(isProtoInputRange!R && T.msgType == "int32".msgType)
 {
+	alias BT = BuffType!T;
 	static if(T == "sint32" || T == "sint64")
-		return src.readVarint().fromZigZag().to!(BuffType!T)();
+		return src.readVarint!(Unsigned!BT).fromZigZag;
+	else static if(T == "bool")
+		return src.readVarint.to!BT;
 	else
-		return src.readVarint().to!(BuffType!T)();
+		return src.readVarint!BT;
 }
 
 /// Ditto
@@ -440,21 +449,18 @@ enum isProtoOutputRange(R) = isOutputRange!(R, ubyte);
  *     src = The raw data
  * Returns: The encoded value
  */
-void writeProto(string T, R)(ref R r, const BuffType!T src)
-	if(isProtoOutputRange!R && (T == "sint32" || T == "sint64"))
+void writeProto(string T, R)(ref R r, BuffType!T src)
+	if(isProtoOutputRange!R && T.msgType == "int32".msgType)
 {
-	toVarint(r, src.toZigZag);
+  static if(T == "sint32" || T == "sint64"){
+    toVarint(r, src.toZigZag);
+  } else{
+    toVarint(r, src);
+  }
 }
 
 /// Ditto
 void writeProto(string T, R)(ref R r, BuffType!T src)
-	if(isProtoOutputRange!R && T.msgType == "int32".msgType)
-{
-	toVarint(r, src);
-}
-
-/// Ditto
-void writeProto(string T, R)(ref R r, const BuffType!T src)
 	if(isProtoOutputRange!R &&
 	  (T.msgType == "double".msgType || T.msgType == "float".msgType))
 {
@@ -468,6 +474,33 @@ void writeProto(string T, R)(ref R r, const BuffType!T src)
 {
 	toVarint(r, src.length);
 	r.put(cast(ubyte[])src);
+}
+
+// Unit test for issue #115
+unittest
+{
+	static if (__traits(compiles, {import std.meta : AliasSeq;})) {
+		import std.meta : AliasSeq;
+	} else {
+		import std.typetuple : TypeTuple;
+		alias AliasSeq = TypeTuple;
+	}
+
+  for(int counter=0;counter<2;counter++){
+    foreach (T; AliasSeq!("bool", "int32", "uint32", "fixed32", "int64", "uint64", "fixed64", "sfixed32", "sfixed64", "sint64", "sint32")) {
+      alias T2 = BuffType!T;
+      auto r = appender!(ubyte[])();
+      static if (is(T2 == bool))
+        T2 src = counter==0 ? false : true;
+      else
+        T2 src = counter==0 ? -1 : 5;
+      r.writeProto!T(src);
+
+      T2 src2 = readProto!T(r.data);
+      import std.conv:text;
+      assert(src == src2, text("error: ", T.stringof, " ", src2, " ", src));
+    }
+  }
 }
 
 /*******************************************************************************
