@@ -151,11 +151,9 @@ auto msgType(string T) pure nothrow @safe {
 @nogc Unsigned!T toZigZag(T)(T src) pure nothrow @safe @property
 	if(isIntegral!T && isSigned!T)
 {
-	return cast(Unsigned!T)(
-			src >= 0 ?
-				src * 2 :
-				-src * 2 - 1
-		);
+	T ret = (src << 1) ^ (src >> (T.sizeof * 8 - 1));
+
+	return cast(Unsigned!T) ret;
 }
 
 unittest {
@@ -177,9 +175,7 @@ unittest {
 @nogc Signed!T fromZigZag(T)(T src) pure nothrow @safe @property
 	if(isIntegral!T && isUnsigned!T)
 {
-	return (src & 1) ?
-		-(src >> 1) - 1 :
-		src >> 1;
+	return (src >>> 1) ^ -(src & 1);
 }
 
 unittest {
