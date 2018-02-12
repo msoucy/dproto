@@ -9,8 +9,10 @@ import dproto.serialize;
 import painlesstraits : getAnnotation, hasValueAnnotation;
 import dproto.compat;
 
-import std.traits : isArray, Identity;
+import std.traits : isArray;
 import std.typecons : Nullable;
+
+alias Identity(alias A) = A;
 
 struct ProtoField
 {
