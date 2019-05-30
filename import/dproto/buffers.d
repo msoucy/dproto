@@ -293,7 +293,7 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 * Params:
 	 *  	val = The value to populate with
 	 */
-	this(inout(ValueType)[] val ...) inout @safe {
+	this(inout(ValueType)[] val) inout @safe {
 		raw = val;
 	}
 
