@@ -16,5 +16,8 @@
 	],
 	"subPackages": [
 		"dprotoc"
-	]
+	],
+	"dependencies": {
+		"undead": "~>1.0.10"
+	}
 }

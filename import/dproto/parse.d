@@ -18,6 +18,7 @@ import std.stdio;
 import std.string;
 import std.format;
 import std.traits;
+import undead.string : inPattern;
 
 /**
  * Basic parser for {@code .proto} schema declarations.
