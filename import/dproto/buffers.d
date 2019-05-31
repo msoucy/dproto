@@ -39,8 +39,8 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		}
 
 		bool isset=false;
-		ValueType raw = defaultValue;
 	}
+	public ValueType proto_raw = defaultValue;
 
 
 	/***************************************************************************
@@ -54,7 +54,7 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 */
 	void clean() nothrow {
 		isset = false;
-		raw = defaultValue;
+		proto_raw = defaultValue;
 	}
 
 	/***************************************************************************
@@ -65,26 +65,26 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 */
 	this(ValueType val) {
 		isset = true;
-		raw = val;
+		proto_raw = val;
 	}
 
 	static if(isDeprecated) {
 		deprecated auto opAssign(ValueType val) {
 			isset = true;
-			raw = val;
+			proto_raw = val;
 			return this;
 		}
 		deprecated ref inout(ValueType) opGet() @property inout {
-			return raw;
+			return proto_raw;
 		}
 	} else {
 		auto opAssign(ValueType val) {
 			isset = true;
-			raw = val;
+			proto_raw = val;
 			return this;
 		}
 		ref inout(ValueType) opGet() @property inout {
-			return raw;
+			return proto_raw;
 		}
 	}
 	alias opGet this;
@@ -105,12 +105,12 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		if(isset) {
 			toVarint(r, MsgType!BufferType | (id << 3));
 			static if(IsBuiltinType(BufferType)) {
-				r.writeProto!BufferType(raw);
+				r.writeProto!BufferType(proto_raw);
 			} else {
 				CntRange cnt;
-				raw.serializeTo(cnt);
+				proto_raw.serializeTo(cnt);
 				toVarint(r, cnt.cnt);
-				raw.serializeTo(r);
+				proto_raw.serializeTo(r);
 			}
 		}
 	}
@@ -131,10 +131,10 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.wireType() == MsgType!BufferType,
 				new DProtoException("Type mismatch"));
 		static if(IsBuiltinType(BufferType)) {
-			raw = data.readProto!BufferType().to!RealType();
+			proto_raw = data.readProto!BufferType().to!RealType();
 		} else {
 			auto myData = data.readProto!"bytes"();
-			raw.deserialize(myData);
+			proto_raw.deserialize(myData);
 		}
 		isset = true;
 	}
@@ -144,9 +144,9 @@ struct OptionalBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	string toJson() {
 		if(isset) {
 			static if(IsBuiltinType(BufferType)) {
-				return JSONValue(raw).toString();
+				return JSONValue(proto_raw).toString();
 			} else {
-				return raw.toJson();
+				return proto_raw.toJson();
 			}
 		} else {
 			return "null";
@@ -172,9 +172,8 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			alias BufferType = TypeString;
 		}
-
-		ValueType raw;
 	}
+	public ValueType proto_raw;
 
 	/***************************************************************************
 	 * Create a Buffer
@@ -183,19 +182,14 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *     val = The value to populate with
 	 */
 	this(ValueType val) {
-		raw = val;
+		proto_raw = val;
 	}
 
 	static if(isDeprecated) {
-		deprecated ref inout(ValueType) opGet() @property inout {
-			return raw;
-		}
+		deprecated alias proto_raw this;
 	} else {
-		ref inout(ValueType) opGet() @property inout {
-			return raw;
-		}
+		alias proto_raw this;
 	}
-	alias opGet this;
 
 
 	/***************************************************************************
@@ -213,12 +207,12 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	{
 		toVarint(r, MsgType!BufferType | (id << 3));
 		static if(IsBuiltinType(BufferType)) {
-			r.writeProto!BufferType(raw);
+			r.writeProto!BufferType(proto_raw);
 		} else {
 			CntRange cnt;
-			raw.serializeTo(cnt);
+			proto_raw.serializeTo(cnt);
 			toVarint(r, cnt.cnt);
-			raw.serializeTo(r);
+			proto_raw.serializeTo(r);
 		}
 	}
 	/***************************************************************************
@@ -236,10 +230,10 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		enforce(msgdata.wireType() == MsgType!BufferType,
 				new DProtoException("Type mismatch"));
 		static if(IsBuiltinType(BufferType)) {
-			raw = data.readProto!BufferType().to!RealType();
+			proto_raw = data.readProto!BufferType().to!RealType();
 		} else {
 			auto myData = data.readProto!"bytes"();
-			raw.deserialize(myData);
+			proto_raw.deserialize(myData);
 		}
 	}
 
@@ -247,9 +241,9 @@ struct RequiredBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	import std.json : JSONValue;
 	string toJson() {
 		static if(IsBuiltinType(BufferType)) {
-			return JSONValue(raw).toString();
+			return JSONValue(proto_raw).toString();
 		} else {
-			return raw.toJson();
+			return proto_raw.toJson();
 		}
 	}
 }
@@ -276,15 +270,14 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		} else {
 			alias BufferType = TypeString;
 		}
-
-		ValueType[] raw;
 	}
+	public ValueType[] proto_raw;
 
 	/***************************************************************************
 	 * Clears the stored values
 	 */
 	void clean() nothrow {
-		raw.length = 0;
+		proto_raw.length = 0;
 	}
 
 	/***************************************************************************
@@ -294,24 +287,24 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 	 *  	val = The value to populate with
 	 */
 	this(inout(ValueType)[] val ...) inout @safe {
-		raw = val;
+		proto_raw = val;
 	}
 
 	static if(isDeprecated) {
 		deprecated auto opAssign(ValueType[] val) {
-			raw = val;
+			proto_raw = val;
 			return this;
 		}
 		deprecated ref inout(ValueType[]) opGet() @property inout {
-			return raw;
+			return proto_raw;
 		}
 	} else {
 		auto opAssign(ValueType[] val) {
-			raw = val;
+			proto_raw = val;
 			return this;
 		}
 		ref inout(ValueType[]) opGet() @property inout {
-			return raw;
+			return proto_raw;
 		}
 	}
 	alias opGet this;
@@ -323,12 +316,12 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 
 	inout(RepeatedBuffer) opSlice(size_t i, size_t j) @property inout
 	{
-		return inout(RepeatedBuffer)(raw[i .. j]);
+		return inout(RepeatedBuffer)(proto_raw[i .. j]);
 	}
 
 	size_t length() @property const
 	{
-		return raw.length;
+		return proto_raw.length;
 	}
 
 	/***************************************************************************
@@ -350,17 +343,17 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static if(packed) {
 			static assert(IsBuiltinType(BufferType),
 					"Cannot have packed repeated message member");
-			if(raw.length) {
+			if(proto_raw.length) {
 				CntRange cnt;
-				foreach (ref e; raw)
+				foreach (ref e; proto_raw)
 					cnt.writeProto!BufferType(e);
 				toVarint(r, PACKED_MSG_TYPE | (id << 3));
 				toVarint(r, cnt.cnt);
-				foreach (ref e; raw)
+				foreach (ref e; proto_raw)
 					r.writeProto!BufferType(e);
 			}
 		} else {
-			foreach(val; raw) {
+			foreach(val; proto_raw) {
 				toVarint(r, MsgType!BufferType | (id << 3));
 				static if(IsBuiltinType(BufferType)) {
 					r.writeProto!BufferType(val);
@@ -391,15 +384,15 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 			if(msgdata.wireType == PACKED_MSG_TYPE && MsgType!BufferType != 2) {
 				auto myData = data.readProto!"bytes"();
 				while(myData.length) {
-					raw ~= myData.readProto!BufferType().to!RealType();
+					proto_raw ~= myData.readProto!BufferType().to!RealType();
 				}
 			} else {
-				raw ~= data.readProto!BufferType().to!RealType();
+				proto_raw ~= data.readProto!BufferType().to!RealType();
 			}
 		} else {
 			enforce(msgdata.wireType == MsgType!BufferType,
 					new DProtoException("Cannot have packed repeated message member"));
-			raw ~= ValueType(data.readProto!"bytes"());
+			proto_raw ~= ValueType(data.readProto!"bytes"());
 		}
 	}
 
@@ -408,11 +401,11 @@ struct RepeatedBuffer(ulong id, string TypeString, RealType, bool isDeprecated=f
 		static import std.json;
 
 		string ret = "[";
-		if(raw.length) {
+		if(proto_raw.length) {
 			if(ret.length > 1) {
 				ret ~= ",";
 			}
-			foreach(val; raw) {
+			foreach(val; proto_raw) {
 				static if(IsBuiltinType(BufferType)) {
 					ret ~= std.json.JSONValue(val).toString();
 				} else {
