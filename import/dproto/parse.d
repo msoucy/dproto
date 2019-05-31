@@ -177,7 +177,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				case "repeated": {
 					static if( hasMember!(Context, "fields") ) {
 						string type = readSymbolName(context);
-						auto newfield = readField(label, type, context);
+						auto newfield = readField(context, label, type);
 						unexpected(context.fields.all!(a => a.id != newfield.id)(),
 									"Repeated field ID");
 						context.fields ~= newfield;
@@ -186,7 +186,25 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 						throw new DProtoSyntaxException("Fields must be nested");
 					}
 				}
-				case "map":
+				case "map": {
+					static if( hasMember!(Context, "fields") ) {
+						unexpected(readChar() == '<', "Expected '<'");
+						string keyType = readSymbolName(context);
+						if (!isBuiltinType(keyType)) {
+							throw new DProtoSyntaxException("Key type must be builtin type, not '" ~ keyType ~ "'");
+						}
+						unexpected(readChar() == ',', "Expected ','");
+						auto valueType = readSymbolName(context);
+						unexpected(readChar() == '>', "Expected '>'");
+						auto newfield = readField(context, "optional", valueType, keyType);
+						unexpected(context.fields.all!(a => a.id != newfield.id)(),
+									"Repeated field ID");
+						context.fields ~= newfield;
+						return;
+					} else {
+						throw new DProtoSyntaxException("Fields must be nested");
+					}
+				}
 				case "oneof": {
 					throw new DProtoSyntaxException("'" ~ label ~ "' not yet implemented");
 				}
@@ -215,7 +233,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 					else static if (hasMember!(Context, "fields"))
 					{
 							string type = reservedName(context, label);
-							auto newfield = readField("optional", type, context);
+							auto newfield = readField(context, "optional", type);
 							unexpected(context.fields.all!(a => a.id != newfield.id)(),
 										"Repeated field ID");
 							context.fields ~= newfield;
@@ -332,7 +350,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 		}
 
 		/** Reads a field declaration and returns it. */
-		Field readField(Context)(string label, string type, Context context) {
+		Field readField(Context)(Context context, string label, string type, string keyType = "") {
 			Field.Requirement labelEnum = label.toUpper().to!(Field.Requirement)();
 			string name = readSymbolName(context);
 			unexpected(readChar() == '=', "Expected '='");
@@ -351,7 +369,7 @@ ProtoPackage ParseProtoSchema(const string name_, string data_)
 				if (labelEnum != Field.Requirement.REPEATED && options.get("packed", "false") != "false") {
 					throw new DProtoSyntaxException("[packed = true] can only be specified for repeated primitive fields");
 				}
-				return Field(labelEnum, type, name, tag, options);
+				return Field(labelEnum, type, keyType, name, tag, options);
 			}
 			throw new DProtoSyntaxException("Expected ';'");
 		}

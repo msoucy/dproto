@@ -17,13 +17,21 @@ alias Identity(alias A) = A;
 struct ProtoField
 {
 	string wireType;
+	string wireKeyType;
 	ubyte fieldNumber;
 	@disable this();
 	this(string w, ubyte f) {
 		wireType = w;
+		wireKeyType = "";
+		fieldNumber = f;
+	}
+	this(string w, string k, ubyte f) {
+		wireType = w;
+		wireKeyType = k;
 		fieldNumber = f;
 	}
 	@nogc auto header() {
+		auto mt = wireKeyType != "" ? "map".msgType : wireType.msgType;
 		return (wireType.msgType | (fieldNumber << 3));
 	}
 }

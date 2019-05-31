@@ -177,15 +177,17 @@ struct Field {
 		REPEATED,
 		REQUIRED
 	}
-	this(Requirement labelEnum, string type, string name, uint tag, Options options) {
+	this(Requirement labelEnum, string type, string keyType, string name, uint tag, Options options) {
 		this.requirement = labelEnum;
 		this.type = type;
+		this.keyType = keyType;
 		this.name = name;
 		this.id = tag;
 		this.options = options;
 	}
 	Requirement requirement;
 	string type;
+	string keyType;
 	string name;
 	uint id;
 	Options options;
@@ -196,6 +198,10 @@ struct Field {
 	const string defaultValue() {
 		return options["default"];
 	}
+
+	const bool isMap() {
+		return keyType != null;
+    }
 
 	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
 	{
@@ -231,7 +237,11 @@ struct Field {
 			}
 		}
 		sink("@(dproto.attributes.ProtoField");
-		sink.formattedWrite(`("%s", %s)`, type, id);
+		if (isMap) {
+			sink.formattedWrite(`("%s", "%s", %s)`, type, keyType, id);
+		} else {
+			sink.formattedWrite(`("%s", %s)`, type, id);
+		}
 		sink(")\n");
 
 		bool wrap_with_nullable =
@@ -244,6 +254,9 @@ struct Field {
 		string typestr = type;
 		if(type.isBuiltinType) {
 			typestr = format(`BuffType!"%s"`, type);
+		}
+		if (isMap) {
+			typestr = format(`%s[BuffType!"%s"]`, typestr, keyType);
 		}
 
 		sink(typestr);
