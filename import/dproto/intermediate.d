@@ -20,7 +20,7 @@ package:
 struct Options {
 	string[string] raw;
 	alias raw this;
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		if(fmt.spec == 'p') {
 			if(!raw.length) return;
@@ -41,7 +41,7 @@ struct MessageType {
 	EnumType[] enumTypes;
 	MessageType[] messageTypes;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		if(fmt.spec == 'p') {
 			sink.formattedWrite("message %s { ", name);
@@ -72,7 +72,7 @@ struct EnumType {
 	Options options;
 	int[string] values;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		sink.formattedWrite("enum %s {\n", name);
 		string suffix = ", ";
@@ -115,7 +115,7 @@ struct Dependency {
 	bool isPublic;
 	bool isWeak;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		if(fmt.spec == 'p') {
 			sink("import ");
@@ -144,7 +144,7 @@ struct ProtoPackage {
 	Service[] rpcServices;
 	string syntax;
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		if(fmt.spec == 'p') {
 			if(packageName) {
@@ -190,14 +190,14 @@ struct Field {
 	uint id;
 	Options options;
 
-	const bool hasDefaultValue() {
+	bool hasDefaultValue() const{
 		return null != ("default" in options);
 	}
-	const string defaultValue() {
+	string defaultValue() const {
 		return options["default"];
 	}
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		switch(fmt.spec) {
 			case 'p':
@@ -296,7 +296,7 @@ struct Service {
 		string responseType;
 		Options options;
 
-		const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+		void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 		{
 			switch(fmt.spec) {
 				case 'p':
@@ -324,7 +324,7 @@ struct Service {
 		}
 	}
 
-	const void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+	void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
 	{
 		switch(fmt.spec) {
 			case 'p':
