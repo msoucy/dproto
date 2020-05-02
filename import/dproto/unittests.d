@@ -698,15 +698,15 @@ unittest
 	auto main = Character();
 	main.name = "Hogan";
 	main.stats = Stats();
-	main.stats.agility = agility;
+	main.stats.get.agility = agility;
 	acct.main = main;
 	auto ser = acct.serialize();
 	Account acct_rx;
 	acct_rx.deserialize(ser);
 	import std.string : format;
 
-	assert(acct_rx.main.stats.agility == agility, format("Expected %d, got %d",
-		agility, acct_rx.main.stats.agility));
+	assert(acct_rx.main.get.stats.get.agility == agility, format("Expected %d, got %d",
+		agility, acct_rx.main.get.stats.get.agility));
 
 }
 
@@ -1035,8 +1035,8 @@ unittest
 	MyMsg proto;
 	proto.a1.foo1 = "bar"; // ok
 	proto.a2 = MyMsgAux();
-	proto.a2.foo1 = "bar"; // Called `get' on null Nullable!MymsgAux
-	assert(proto.a1.foo1 == proto.a2.foo1);
+	proto.a2.get.foo1 = "bar"; // Called `get' on null Nullable!MymsgAux
+	assert(proto.a1.foo1 == proto.a2.get.foo1);
 }
 
 unittest
