@@ -1,3 +1,5 @@
+module dproto.app;
+
 import std.range;
 import std.algorithm;
 import std.getopt;
